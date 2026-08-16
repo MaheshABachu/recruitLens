@@ -1,0 +1,79 @@
+/*
+ * Color tokens for both themes. Dark is the visual home for RecruitLens
+ * (a focused, always-open tool most people leave running next to an IDE)
+ * but every surface must hold up in light too.
+ *
+ * Signature accent: amber (#FF8A3D / #E8712B) — the "lens" focus ring color,
+ * used sparingly for the active pipeline stage and priority marks.
+ */
+
+:root {
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 1px 2px rgba(10, 12, 18, 0.06);
+  --shadow-md: 0 8px 24px rgba(10, 12, 18, 0.12);
+
+  --green: #1e9e70;
+  --red: #dc4c4c;
+  --cyan: #0e93a6;
+
+  /* Light palette (default) */
+  --bg: #f6f5f2;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f0efea;
+  --border: #e3e1da;
+  --border-strong: #cfccc2;
+  --text: #1b1d22;
+  --text-dim: #62656f;
+  --text-faint: #9497a0;
+  --accent: #e8712b;
+  --accent-strong: #c85e1f;
+  --accent-soft: rgba(232, 113, 43, 0.1);
+  --backdrop: rgba(20, 18, 14, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0e14;
+    --bg-elevated: #11151d;
+    --surface: #161b25;
+    --surface-2: #1d2330;
+    --border: #2a3140;
+    --border-strong: #3a4356;
+    --text: #e7e9ee;
+    --text-dim: #9aa3b5;
+    --text-faint: #5c6478;
+    --accent: #ff8a3d;
+    --accent-strong: #ff9e5c;
+    --accent-soft: rgba(255, 138, 61, 0.16);
+    --backdrop: rgba(4, 5, 8, 0.55);
+    --green: #34d399;
+    --red: #f87171;
+    --cyan: #4dd0e1;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0e14;
+  --bg-elevated: #11151d;
+  --surface: #161b25;
+  --surface-2: #1d2330;
+  --border: #2a3140;
+  --border-strong: #3a4356;
+  --text: #e7e9ee;
+  --text-dim: #9aa3b5;
+  --text-faint: #5c6478;
+  --accent: #ff8a3d;
+  --accent-strong: #ff9e5c;
+  --accent-soft: rgba(255, 138, 61, 0.16);
+  --backdrop: rgba(4, 5, 8, 0.55);
+  --green: #34d399;
+  --red: #f87171;
+  --cyan: #4dd0e1;
+}
