@@ -1,5 +1,4 @@
 import type { Company } from "../../types/pipeline";
-import { Tag } from "../shared/Tag";
 import { RoleSelect } from "./RoleSelect";
 
 interface DetailHeaderProps {
@@ -17,17 +16,10 @@ export function DetailHeader({
   onTogglePriority,
   onDelete,
 }: DetailHeaderProps) {
-  function handleDelete() {
-    if (window.confirm(`Remove ${company.name} from your pipeline? This can't be undone.`)) {
-      onDelete();
-    }
-  }
-
   return (
     <div className="detail-header">
       <div className="detail-header__title">
         <h1>{company.name}</h1>
-        <Tag>{company.tier}</Tag>
       </div>
       <div className="detail-header__controls">
         {company.roles.length > 1 && (
@@ -45,7 +37,7 @@ export function DetailHeader({
         <button
           type="button"
           className="delete-button"
-          onClick={handleDelete}
+          onClick={onDelete}
           aria-label={`Remove ${company.name} from pipeline`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">

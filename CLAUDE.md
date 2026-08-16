@@ -20,9 +20,17 @@ Required in `.env.local` (gitignored):
 ```
 VITE_GEMINI_API_KEY=
 VITE_GOOGLE_CLIENT_ID=   # Gmail OAuth (GIS popup) — sync agent is disabled without it
+VITE_SUPABASE_URL=       # https://sytbbdmrkzfrpqtmioiv.supabase.co — the "recruitLens" project
+VITE_SUPABASE_ANON_KEY=  # anon (legacy JWT) key — RLS policies are permissive, see below
 ```
 
-No Supabase or other backend is wired up in this repo — see Architecture below.
+## Supabase
+
+Project `recruitLens` (`sytbbdmrkzfrpqtmioiv`), same org as the sibling `interview-os` project. Three tables:
+- `companies` / `roles` (child, `company_id` FK, `on delete cascade`) — column names mirror `src/types/pipeline.ts`'s `Company`/`Role` shapes except `group` → `category` (`group` is a reserved word) and camelCase → snake_case (`nextAction` → `next_action`, etc.). `status` is a free-text column with a `CHECK` constraint against the 7 `PipelineStatus` values — no enum, no translation layer, matching how the app already treats status as the display string directly.
+- `email_sync_state` — single row (`id = 1`, always upsert, same "exactly one row" convention as interview-os's `interview_profile`/`leetcode_sync`), holds `last_subject`: the watermark the email agent uses to know where the previous sync left off. See `emailAgentArchitecture.md`.
+
+**No auth** (per `plan.md`'s explicit non-goals) — RLS is enabled on all three tables but with `using (true) with check (true)` policies for `anon`/`authenticated`, so the published anon key has full read/write. This is a deliberate single-user-prototype tradeoff, not an oversight — don't "fix" it by adding user-scoped policies without an actual auth system to back them.
 
 ## Architecture
 
@@ -32,9 +40,9 @@ React 18 + TypeScript + Vite. Styling is hand-written CSS custom properties (`sr
 
 **State is two mechanisms, deliberately not more:**
 - `ThemeContext` (`src/context/ThemeContext.tsx`) — the only real cross-cutting global (light/dark, persisted to `localStorage` under `recruitlens-theme`).
-- `usePipelineStore()` (`src/hooks/usePipelineStore.ts`) — a plain hook, not a Context, holding `companies`/`activeCompany`/`activeRole` in `useState`, starting **empty** — no seed data, no backend. Companies only enter the pipeline via the email agent's approval flow (or `addCompany` if a manual "Add company" flow gets wired up later). It's called once in `App.tsx` and prop-drilled two levels to `Sidebar` and `CompanyDetail`. There is no persistence layer — pipeline edits live only in memory and are lost on refresh. Presentational components (`PipelineTracker`, `FieldGrid`, `MaterialsSection`, `StatusBadge`, `Tag`) take data as props and must never import the store hook directly.
+- `usePipelineStore()` (`src/hooks/usePipelineStore.ts`) — a plain hook, not a Context, holding `companies`/`activeCompany`/`activeRole` in `useState`, hydrated once from Supabase on mount. Every mutation is **optimistic**: local state updates immediately, the matching Supabase write fires in the background (not awaited) — `addCompany` generates its own `id`/role `id` client-side via `crypto.randomUUID()` specifically so it can stay synchronous and return the new `Company` immediately, same as before persistence existed. It's called once in `App.tsx` and prop-drilled two levels to `Sidebar` and `CompanyDetail`. Presentational components (`PipelineTracker`, `FieldGrid`, `MaterialsSection`, `StatusBadge`, `Tag`) take data as props and must never import the store hook directly.
 
-`src/types/pipeline.ts` defines `Company`/`Role`/`PipelineStatus`. Status values are the display strings directly (`"Phone Screen"`, `"Not Applied"`, etc.) — there's no DB enum layer to map through since there's no DB.
+`src/types/pipeline.ts` defines `Company`/`Role`/`PipelineStatus`. Status values are the display strings directly (`"Phone Screen"`, `"Not Applied"`, etc.) — matched by the DB's `CHECK` constraint, not translated through an enum.
 
 ### Email agent (`src/lib/gmail.ts`, `gemini.ts`, `emailAgent.ts`, `src/hooks/useEmailAgent.ts`)
 

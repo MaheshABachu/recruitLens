@@ -8,6 +8,7 @@ export type PipelineStatus =
   | "Rejected";
 
 export interface Role {
+  id: string;
   role: string;
   status: PipelineStatus;
   nextAction?: string;
@@ -25,7 +26,6 @@ export interface Company {
   id: string;
   name: string;
   group: string;
-  tier: string;
   problems: number;
   priority: boolean;
   roles: Role[];

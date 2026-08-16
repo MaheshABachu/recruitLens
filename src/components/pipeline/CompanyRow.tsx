@@ -27,10 +27,9 @@ export function CompanyRow({ company, isActive, onSelect }: CompanyRowProps) {
           )}
           {company.name}
         </span>
-        <span className="company-row__meta">
-          {company.tier}
-          {company.roles.length > 1 ? ` · ${company.roles.length} roles` : ""}
-        </span>
+        {company.roles.length > 1 && (
+          <span className="company-row__meta">{company.roles.length} roles</span>
+        )}
       </span>
       <StatusBadge status={status} />
     </button>

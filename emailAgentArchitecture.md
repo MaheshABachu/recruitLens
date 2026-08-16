@@ -1,6 +1,6 @@
 # Email Agent Architecture
 
-Read-only Gmail scan that classifies recruiting emails via Gemini and surfaces pipeline changes for the user to **approve or reject** — it never mutates the pipeline on its own. Entirely client-side — no backend, no database. State lives in React (`usePipelineStore`) and `localStorage`.
+Read-only Gmail scan that classifies recruiting emails via Gemini and surfaces pipeline changes for the user to **approve or reject** — it never mutates the pipeline on its own. The agent itself talks only to Gmail and Gemini directly (no backend of its own); approved suggestions flow through `usePipelineStore`, which now persists to Supabase (see `CLAUDE.md`). The agent's own state (sync log, approval queue) still lives in `localStorage`, not Supabase.
 
 Ported from a sibling project (interview-os) and adapted to RecruitLens's `PipelineStatus` shape.
 
@@ -80,8 +80,9 @@ Returns a JSON array, one object per email, in the same order, each tagged with 
 2. **Search** — `fetchRecruitingEmails()`. If zero results, short-circuits with a "no emails found" summary.
 3. **Dedup** — filters the search results against `email_agent_log` in `localStorage` (keyed by `gmail_message_id`), so a re-sync only processes genuinely new mail.
 4. **Phase 1a — fetch, concurrent.** A fixed-size worker pool (`FETCH_CONCURRENCY = 10`) pulls from a shared index; each worker fetches the full email content from Gmail and extracts headers/body. Gmail API calls, not Gemini, so no batching concern here.
-5. **Phase 1b — analyze, batched.** Fetched emails are chunked into groups of `BATCH_SIZE = 10` and sent to `analyzeRecruitingEmailsBatch` one chunk at a time.
-6. **Phase 2 — build suggestions, sequential, in original message order.** For each analyzed email:
+5. **Watermark cutoff** — `getLastSeenSubject()` (`src/lib/emailSyncState.ts`, backed by Supabase's `email_sync_state` table, a single row keyed `id = 1`) reads the subject of the newest email the *previous* sync saw. Gmail's search results come back newest-first, so `newMsgs`/`rawEmails` get truncated at the first entry whose subject matches — everything from there on has already been seen. This sits on top of the message-id dedup above; its job is purely to stop analyzing a big backlog once it hits familiar territory, since that's what actually costs Gemini calls. At the end of a sync with any new mail, the newest subject seen (`rawEmails[0]`, since order is newest-first) gets saved as the new watermark via `saveLastSeenSubject()`. A known fragility: this matches on subject text, not message ID — two unrelated emails sharing an exact subject would falsely trigger the cutoff. Acceptable given it's a secondary optimization on top of the real (ID-based) dedup, not the source of truth for what's been processed.
+6. **Phase 1b — analyze, batched.** Fetched emails (post-cutoff) are chunked into groups of `BATCH_SIZE = 10` and sent to `analyzeRecruitingEmailsBatch` one chunk at a time.
+7. **Phase 2 — build suggestions, sequential, in original message order.** For each analyzed email:
    - `is_recruiting_email: false` (or a classification failure) → logged as skipped, `review_status: "none"`.
    - No match + `company_name` + `confidence: "high"` → a `kind: "new_company"` suggestion (`review_status: "pending"`), proposing to add the company at the mapped status (or `"Applied"` if none was signaled).
    - Matched an existing company, and the mapped status genuinely outranks the role's current status (`STATUS_RANK` — `Not Applied` < `Rejected` < `Applied` < `OA` < `Phone Screen` < `Onsite` < `Offer`) → a `kind: "status_update"` suggestion.
@@ -89,7 +90,7 @@ Returns a JSON array, one object per email, in the same order, each tagged with 
    - Everything else (status not advanced, low confidence, no match, no info) → informational skip, `review_status: "none"`, nothing to approve.
    - A suggestion's `note`, if present, rides along with whatever else that suggestion does — approving a `status_update` also appends its note in the same action, it isn't a separate approval step.
    - Gemini's snake_case `status_update` is translated to RecruitLens's `PipelineStatus` via `STATUS_MAP`. `"technical"` has no dedicated stage and folds into `"Onsite"`.
-7. **Log.** Every processed email produces an `AgentLogEntry`, prepended to the existing log (newest first), capped at 300 entries, persisted to `localStorage` (`email_agent_log`).
+8. **Log.** Every processed email produces an `AgentLogEntry`, prepended to the existing log (newest first), capped at 300 entries, persisted to `localStorage` (`email_agent_log`).
 
 **Known limitation:** because nothing is applied during the sync itself, `companies` is a fixed snapshot for the whole of phase 2 — if two emails in the same sync both concern a company that doesn't exist yet, you'll get two separate `new_company` suggestions for it rather than one being merged into the other. Reject the duplicate when reviewing. Same applies if two emails in one sync both propose advancing the same existing company to different stages — both suggestions target the *current* stored status independently, so approve the one that's actually further along and reject/ignore the other.
 
@@ -112,7 +113,9 @@ Returns a JSON array, one object per email, in the same order, each tagged with 
 | `gmail_access_token` / `gmail_token_expiry` | OAuth token + expiry timestamp |
 | `email_agent_log` | Array of `AgentLogEntry`, newest first, capped at 300 — dedup source, audit trail, **and** the approval queue (entries with `review_status: "pending"` and a `pending` payload). Surviving in the same store as the log is what makes pending suggestions persist across a page refresh with no extra plumbing. |
 
-Pipeline data itself (`companies`) is **not** persisted anywhere — it's `usePipelineStore`'s in-memory state, starting empty (no seed data). A page refresh loses every approved pipeline edit; only the log (including anything still pending) and the Gmail token survive.
+Pipeline data itself (`companies`) is persisted to Supabase (`companies`/`roles` tables) via `usePipelineStore` — see `CLAUDE.md` for the schema. Approving a suggestion writes through to the DB in the background, same as any other pipeline edit.
+
+The watermark subject (see step 5 above) is the one piece of the agent's own state that lives in Supabase rather than `localStorage` — `email_sync_state`, single row, `id = 1`, column `last_subject`.
 
 ## History / known constraints
 
