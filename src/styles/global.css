@@ -1569,3 +1569,106 @@ button:disabled {
     width: 100vw;
   }
 }
+
+/* ---------- Company questions (curated LeetCode list per company) ---------- */
+.company-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.company-questions__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.company-questions__filters .stage-filter__select {
+  flex: 1;
+  min-width: 0;
+}
+
+.company-questions__empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.company-questions__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.company-questions__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+
+.company-questions__row + .company-questions__row {
+  border-top: 1px solid var(--border);
+}
+
+.company-questions__solved {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--green);
+}
+
+.company-questions__difficulty {
+  flex-shrink: 0;
+  width: 62px;
+  justify-content: center;
+  text-transform: capitalize;
+}
+
+.company-questions__difficulty--easy {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+
+.company-questions__difficulty--medium {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.company-questions__difficulty--hard {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+.company-questions__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-questions__name:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.company-questions__frequency {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  width: 48px;
+  text-align: right;
+}

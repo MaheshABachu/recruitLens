@@ -37,3 +37,20 @@ export async function triggerLeetCodeSync(username?: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+// Slugs the connected account has an accepted solve for, keyed the same way
+// as company_questions.problem_slug so callers can do a plain Set lookup.
+// Only ever reflects what's made it into leetcode_solves — bounded by the
+// same "most recent 20 per sync" limitation as the sync itself.
+export async function getSolvedProblemSlugs(): Promise<Set<string>> {
+  const { data, error } = await supabase.from("leetcode_solves").select("leetcode_problems(slug)");
+  if (error) {
+    console.error("Failed to load solved problems:", error);
+    return new Set();
+  }
+  const slugs = (data ?? []).map((row) => {
+    const problem = row.leetcode_problems as { slug: string } | { slug: string }[] | null;
+    return Array.isArray(problem) ? problem[0]?.slug : problem?.slug;
+  });
+  return new Set(slugs.filter((slug): slug is string => !!slug));
+}

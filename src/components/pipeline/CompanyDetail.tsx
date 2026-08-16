@@ -5,6 +5,9 @@ import { DetailHeader } from "./DetailHeader";
 import { PipelineTracker } from "./PipelineTracker";
 import { FieldGrid } from "./FieldGrid";
 import { MaterialsSection } from "./MaterialsSection";
+import { CompanyQuestions } from "./CompanyQuestions";
+import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
+import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
 
 interface CompanyDetailProps {
   company: Company | null;
@@ -25,6 +28,9 @@ export function CompanyDetail({
   onUpdateRoleField,
   onDeleteCompany,
 }: CompanyDetailProps) {
+  const { questions } = useCompanyQuestions(company?.name);
+  const solvedSlugs = useLeetCodeSolvedSlugs();
+
   if (!company || !activeRole) {
     return (
       <main className="company-detail company-detail--empty">
@@ -59,6 +65,12 @@ export function CompanyDetail({
       <Card title="Application materials" className="company-detail__section">
         <MaterialsSection role={activeRole} />
       </Card>
+
+      {questions.length > 0 && (
+        <Card title="Company questions" className="company-detail__section">
+          <CompanyQuestions questions={questions} solvedSlugs={solvedSlugs} />
+        </Card>
+      )}
     </main>
   );
 }
