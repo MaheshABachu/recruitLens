@@ -270,52 +270,27 @@ button:disabled {
   font-size: 13px;
 }
 
-.company-group {
-  margin-bottom: 4px;
-}
-
-.company-group__header {
+.stage-filter {
   display: flex;
-  align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-.company-group__header:hover {
-  color: var(--text-dim);
-}
-
-.company-group__chevron {
-  display: inline-flex;
-  transition: transform 0.15s ease;
-  font-size: 10px;
-}
-
-.company-group__chevron--collapsed {
-  transform: rotate(-90deg);
-}
-
-.company-group__name {
+.stage-filter__select {
   flex: 1;
-  text-align: left;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
-.company-group__count {
-  font-family: var(--font-mono);
-  font-weight: 500;
-}
-
-.company-group__list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.stage-filter__select:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .company-row {
@@ -529,6 +504,25 @@ button:disabled {
   background: var(--accent-soft);
 }
 
+.delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.delete-button:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
 .company-detail__status-row {
   display: flex;
 }
@@ -657,16 +651,37 @@ button:disabled {
   color: var(--text-faint);
 }
 
-.field-grid__value {
-  font-size: 14px;
-  color: var(--text);
-  line-height: 1.45;
-  word-break: break-word;
+.field-grid__item--wide {
+  grid-column: 1 / -1;
 }
 
-.field-grid__value--empty {
+.field-grid__input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.field-grid__input::placeholder {
   color: var(--text-faint);
   font-style: italic;
+}
+
+.field-grid__input:hover {
+  border-color: var(--border-strong);
+}
+
+.field-grid__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.field-grid__textarea {
+  resize: vertical;
+  line-height: 1.5;
 }
 
 /* ---------- Materials ---------- */

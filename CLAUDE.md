@@ -32,7 +32,7 @@ React 18 + TypeScript + Vite. Styling is hand-written CSS custom properties (`sr
 
 **State is two mechanisms, deliberately not more:**
 - `ThemeContext` (`src/context/ThemeContext.tsx`) — the only real cross-cutting global (light/dark, persisted to `localStorage` under `recruitlens-theme`).
-- `usePipelineStore()` (`src/hooks/usePipelineStore.ts`) — a plain hook, not a Context, holding `companies`/`activeCompany`/`activeRole` in `useState`, seeded from static `src/data/mockCompanies.ts`. It's called once in `App.tsx` and prop-drilled two levels to `Sidebar` and `CompanyDetail`. There is no persistence layer — pipeline edits live only in memory and are lost on refresh. Presentational components (`PipelineTracker`, `FieldGrid`, `MaterialsSection`, `StatusBadge`, `Tag`) take data as props and must never import the store hook directly.
+- `usePipelineStore()` (`src/hooks/usePipelineStore.ts`) — a plain hook, not a Context, holding `companies`/`activeCompany`/`activeRole` in `useState`, starting **empty** — no seed data, no backend. Companies only enter the pipeline via the email agent's approval flow (or `addCompany` if a manual "Add company" flow gets wired up later). It's called once in `App.tsx` and prop-drilled two levels to `Sidebar` and `CompanyDetail`. There is no persistence layer — pipeline edits live only in memory and are lost on refresh. Presentational components (`PipelineTracker`, `FieldGrid`, `MaterialsSection`, `StatusBadge`, `Tag`) take data as props and must never import the store hook directly.
 
 `src/types/pipeline.ts` defines `Company`/`Role`/`PipelineStatus`. Status values are the display strings directly (`"Phone Screen"`, `"Not Applied"`, etc.) — there's no DB enum layer to map through since there's no DB.
 

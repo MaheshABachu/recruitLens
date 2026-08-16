@@ -112,7 +112,7 @@ Returns a JSON array, one object per email, in the same order, each tagged with 
 | `gmail_access_token` / `gmail_token_expiry` | OAuth token + expiry timestamp |
 | `email_agent_log` | Array of `AgentLogEntry`, newest first, capped at 300 — dedup source, audit trail, **and** the approval queue (entries with `review_status: "pending"` and a `pending` payload). Surviving in the same store as the log is what makes pending suggestions persist across a page refresh with no extra plumbing. |
 
-Pipeline data itself (`companies`) is **not** persisted anywhere — it's `usePipelineStore`'s in-memory state, seeded from `mockCompanies.ts`. A page refresh loses every approved pipeline edit; only the log (including anything still pending) and the Gmail token survive.
+Pipeline data itself (`companies`) is **not** persisted anywhere — it's `usePipelineStore`'s in-memory state, starting empty (no seed data). A page refresh loses every approved pipeline edit; only the log (including anything still pending) and the Gmail token survive.
 
 ## History / known constraints
 

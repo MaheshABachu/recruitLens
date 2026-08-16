@@ -12,6 +12,8 @@ interface CompanyDetailProps {
   activeRoleIndex: number;
   onSelectRole: (index: number) => void;
   onTogglePriority: (companyId: string) => void;
+  onUpdateRoleField: <K extends keyof Role>(companyId: string, roleIndex: number, field: K, value: Role[K]) => void;
+  onDeleteCompany: (companyId: string) => void;
 }
 
 export function CompanyDetail({
@@ -20,6 +22,8 @@ export function CompanyDetail({
   activeRoleIndex,
   onSelectRole,
   onTogglePriority,
+  onUpdateRoleField,
+  onDeleteCompany,
 }: CompanyDetailProps) {
   if (!company || !activeRole) {
     return (
@@ -36,6 +40,7 @@ export function CompanyDetail({
         activeRoleIndex={activeRoleIndex}
         onSelectRole={onSelectRole}
         onTogglePriority={() => onTogglePriority(company.id)}
+        onDelete={() => onDeleteCompany(company.id)}
       />
 
       <div className="company-detail__status-row">
@@ -45,7 +50,10 @@ export function CompanyDetail({
       <PipelineTracker status={activeRole.status} />
 
       <Card title="Details" className="company-detail__section">
-        <FieldGrid role={activeRole} />
+        <FieldGrid
+          role={activeRole}
+          onChange={(field, value) => onUpdateRoleField(company.id, activeRoleIndex, field, value)}
+        />
       </Card>
 
       <Card title="Application materials" className="company-detail__section">

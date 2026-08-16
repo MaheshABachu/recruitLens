@@ -1,19 +1,16 @@
 import { useMemo, useState } from "react";
-import { mockCompanies } from "../data/mockCompanies";
 import type { Company, Role } from "../types/pipeline";
 
 /**
- * Owns all Pipeline state and mutations. Seeded from mockCompanies today;
- * when real persistence lands, only the inside of this hook changes (a
- * Supabase query + mutation instead of useState) — every caller keeps the
- * same API. Components must go through these actions, never read
- * mockCompanies or setState directly.
+ * Owns all Pipeline state and mutations. Starts empty — no persistence layer
+ * yet, so this is in-memory only; when real persistence lands, only the
+ * inside of this hook changes (a Supabase query + mutation instead of
+ * useState) — every caller keeps the same API. Components must go through
+ * these actions, never read or setState directly.
  */
 export function usePipelineStore() {
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(
-    mockCompanies[0]?.id ?? null,
-  );
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [activeRoleIndex, setActiveRoleIndex] = useState(0);
 
   const activeCompany = useMemo(
@@ -72,6 +69,12 @@ export function usePipelineStore() {
     return newCompany;
   }
 
+  function deleteCompany(companyId: string) {
+    setCompanies((prev) => prev.filter((c) => c.id !== companyId));
+    setActiveCompanyId((prev) => (prev === companyId ? null : prev));
+    setActiveRoleIndex(0);
+  }
+
   function appendRoleNote(companyId: string, roleIndex: number, note: string) {
     setCompanies((prev) =>
       prev.map((c) => {
@@ -94,6 +97,7 @@ export function usePipelineStore() {
     togglePriority,
     updateRoleField,
     addCompany,
+    deleteCompany,
     appendRoleNote,
   };
 }

@@ -26,6 +26,7 @@ export default function App() {
     togglePriority,
     addCompany,
     updateRoleField,
+    deleteCompany,
     appendRoleNote,
   } = usePipelineStore();
 
@@ -101,6 +102,8 @@ export default function App() {
           activeRoleIndex={activeRoleIndex}
           onSelectRole={selectRole}
           onTogglePriority={togglePriority}
+          onUpdateRoleField={updateRoleField}
+          onDeleteCompany={deleteCompany}
         />
       </div>
 
