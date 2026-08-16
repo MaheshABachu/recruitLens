@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { AgentLogEntry, SyncResult } from "../../hooks/useEmailAgent";
 import { RecentUpdates, FullAgentLog } from "./EmailAgentLog";
-import { SyncSummary } from "./SyncSummary";
+import { SuggestionReview } from "./SuggestionReview";
 
 interface EmailAgentPanelProps {
   onClose: () => void;
@@ -15,7 +15,11 @@ interface EmailAgentPanelProps {
   onSync: () => void;
   agentLog: AgentLogEntry[];
   onUndo: (entry: AgentLogEntry) => void;
-  syncSummary: string | null;
+  pendingSuggestions: AgentLogEntry[];
+  onApproveSuggestion: (entry: AgentLogEntry) => void;
+  onRejectSuggestion: (entry: AgentLogEntry) => void;
+  onApproveAllSuggestions: () => void;
+  onRejectAllSuggestions: () => void;
 }
 
 export function EmailAgentPanel({
@@ -30,7 +34,11 @@ export function EmailAgentPanel({
   onSync,
   agentLog,
   onUndo,
-  syncSummary,
+  pendingSuggestions,
+  onApproveSuggestion,
+  onRejectSuggestion,
+  onApproveAllSuggestions,
+  onRejectAllSuggestions,
 }: EmailAgentPanelProps) {
   const hasClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -110,7 +118,7 @@ export function EmailAgentPanel({
 
             {!syncing && lastSyncResult && (
               <p className="email-panel__result">
-                Processed {lastSyncResult.processed} emails · Updated {lastSyncResult.updated} companies · Skipped{" "}
+                Processed {lastSyncResult.processed} emails · Suggested {lastSyncResult.suggested} changes · Skipped{" "}
                 {lastSyncResult.skipped}
               </p>
             )}
@@ -128,7 +136,13 @@ export function EmailAgentPanel({
             </div>
           </section>
 
-          <SyncSummary summary={syncSummary} />
+          <SuggestionReview
+            entries={pendingSuggestions}
+            onApprove={onApproveSuggestion}
+            onReject={onRejectSuggestion}
+            onApproveAll={onApproveAllSuggestions}
+            onRejectAll={onRejectAllSuggestions}
+          />
 
           <RecentUpdates agentLog={agentLog} onUndo={onUndo} />
           <FullAgentLog agentLog={agentLog} />

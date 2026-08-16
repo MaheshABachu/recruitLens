@@ -34,16 +34,20 @@ export default function App() {
     authenticate: authenticateEmail,
     disconnect: disconnectEmail,
     syncEmails,
+    approveSuggestion,
+    rejectSuggestion,
+    approveAllPending,
+    rejectAllPending,
     undoStatusUpdate,
     agentLog,
     syncing: emailSyncing,
     syncProgress: emailSyncProgress,
     lastSyncResult,
     syncError,
-    syncSummary,
   } = useEmailAgent();
 
   const emailAgentStore = { companies, addCompany, updateRoleField, appendRoleNote };
+  const pendingSuggestions = agentLog.filter((e) => e.review_status === "pending");
 
   // Auto-close the drawer if the viewport grows past the mobile breakpoint.
   useEffect(() => {
@@ -113,7 +117,11 @@ export default function App() {
           onSync={() => syncEmails(emailAgentStore)}
           agentLog={agentLog}
           onUndo={(entry) => undoStatusUpdate(entry, emailAgentStore)}
-          syncSummary={syncSummary}
+          pendingSuggestions={pendingSuggestions}
+          onApproveSuggestion={(entry) => approveSuggestion(entry, emailAgentStore)}
+          onRejectSuggestion={rejectSuggestion}
+          onApproveAllSuggestions={() => approveAllPending(emailAgentStore)}
+          onRejectAllSuggestions={rejectAllPending}
         />
       )}
     </div>

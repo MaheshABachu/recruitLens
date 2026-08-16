@@ -9,7 +9,7 @@ import {
   extractEmailBody,
   extractEmailHeaders,
 } from "../lib/gmail";
-import { analyzeRecruitingEmail, type EmailStatusUpdate } from "../lib/emailAgent";
+import { analyzeRecruitingEmailsBatch, type EmailStatusUpdate } from "../lib/emailAgent";
 
 const TOKEN_KEY = "gmail_access_token";
 const LOG_STORAGE_KEY = "email_agent_log";
@@ -39,6 +39,20 @@ const STATUS_RANK: Record<PipelineStatus, number> = {
   Offer: 6,
 };
 
+export type SuggestionKind = "new_company" | "status_update" | "note_only";
+
+// The mutation a suggestion would apply if approved — nothing here has
+// happened to the pipeline yet.
+export interface PendingChange {
+  kind: SuggestionKind;
+  company_name: string;
+  current_status?: PipelineStatus; // status_update only
+  proposed_status?: PipelineStatus; // new_company / status_update
+  note: string | null;
+}
+
+export type ReviewStatus = "none" | "pending" | "approved" | "rejected";
+
 export interface AgentLogEntry {
   id: string;
   gmail_message_id: string;
@@ -50,11 +64,13 @@ export interface AgentLogEntry {
   action_taken: string;
   raw_summary: string;
   company_id?: string;
+  review_status: ReviewStatus;
+  pending?: PendingChange;
 }
 
 export interface SyncResult {
   processed: number;
-  updated: number;
+  suggested: number;
   skipped: number;
 }
 
@@ -88,14 +104,41 @@ function pickRoleIndex(company: Company): number {
   return best;
 }
 
-// Plain, deterministic recap of what this sync changed — no Gemini call.
-function buildSyncSummary(entries: AgentLogEntry[]): string {
-  const updates = entries.filter(
-    (e) => e.action_taken.startsWith("Updated status:") || e.action_taken.startsWith("Added to pipeline"),
-  );
-  if (updates.length === 0) return "No companies were updated this sync.";
-  const lines = updates.map((e) => `${e.company_name || "Unknown company"} — ${e.action_taken}`);
-  return `Updated ${updates.length} ${updates.length === 1 ? "company" : "companies"}:\n${lines.join("\n")}`;
+// Applies a single suggestion's pending change to the live store and returns
+// the log entry rewritten to reflect what actually happened. Does nothing
+// (returns entry unchanged) if there's no pending change to apply.
+function applyPendingChange(entry: AgentLogEntry, store: EmailAgentStore): AgentLogEntry {
+  const p = entry.pending;
+  if (!p) return entry;
+
+  const noteText = p.note ? `[${new Date().toLocaleDateString()} via email] ${p.note}` : null;
+
+  if (p.kind === "new_company") {
+    const created = store.addCompany({ name: p.company_name, status: p.proposed_status ?? "Applied" });
+    if (noteText) store.appendRoleNote(created.id, 0, noteText);
+    return {
+      ...entry,
+      company_id: created.id,
+      action_taken: `Added to pipeline as ${p.proposed_status ?? "Applied"}: ${created.name}`,
+      review_status: "approved",
+    };
+  }
+
+  const company = entry.company_id ? store.companies.find((c) => c.id === entry.company_id) : undefined;
+  if (!company) {
+    return { ...entry, action_taken: `${entry.action_taken} — company no longer in pipeline`, review_status: "rejected" };
+  }
+  const roleIndex = pickRoleIndex(company);
+
+  if (p.kind === "status_update" && p.proposed_status) {
+    store.updateRoleField(company.id, roleIndex, "status", p.proposed_status);
+    if (noteText) store.appendRoleNote(company.id, roleIndex, noteText);
+    return { ...entry, action_taken: `Updated status: ${p.current_status} → ${p.proposed_status}`, review_status: "approved" };
+  }
+
+  // note_only
+  if (noteText) store.appendRoleNote(company.id, roleIndex, noteText);
+  return { ...entry, action_taken: `Added note to ${company.name}`, review_status: "approved" };
 }
 
 export function useEmailAgent() {
@@ -105,7 +148,6 @@ export function useEmailAgent() {
   const [syncProgress, setSyncProgress] = useState("");
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncSummary, setSyncSummary] = useState<string | null>(null);
 
   function authenticate() {
     setSyncError(null);
@@ -128,9 +170,10 @@ export function useEmailAgent() {
     setSyncProgress("Connecting to Gmail…");
     setSyncError(null);
     setLastSyncResult(null);
-    setSyncSummary(null);
 
-    let companies = store.companies;
+    // Sync no longer mutates the pipeline — this is a read-only snapshot used
+    // purely for matching, so it doesn't need to track additions mid-loop.
+    const companies = store.companies;
 
     try {
       const freshToken = await ensureFreshToken();
@@ -139,8 +182,7 @@ export function useEmailAgent() {
       const messages = await fetchRecruitingEmails(freshToken);
 
       if (messages.length === 0) {
-        setLastSyncResult({ processed: 0, updated: 0, skipped: 0 });
-        setSyncSummary("No recruiting-related emails found in the last 30 days.");
+        setLastSyncResult({ processed: 0, suggested: 0, skipped: 0 });
         setSyncProgress("");
         return;
       }
@@ -153,53 +195,47 @@ export function useEmailAgent() {
       setSyncProgress(`Found ${messages.length} recruiting emails · ${newMsgs.length} new to process…`);
 
       let processed = 0;
-      let updated = 0;
+      let suggested = 0;
       let skipped = 0;
       const inserted: AgentLogEntry[] = [];
 
-      // Phase 1: fetch + analyze concurrently — this is the slow, network-bound
-      // part (Gmail fetch + Gemini call per email), so it's the one worth
-      // parallelizing. Capped at CONCURRENCY in-flight requests at a time.
-      const CONCURRENCY = 6;
-      let completedAnalysis = 0;
+      // Phase 1a: fetch raw email content concurrently — Gmail API calls, not
+      // Gemini, so no batching concern here. Capped at FETCH_CONCURRENCY in-flight.
+      const FETCH_CONCURRENCY = 10;
       let unauthorized = false;
+      let completedFetch = 0;
 
-      interface FetchedEmail {
+      interface RawEmail {
         subject: string;
         sender: string;
         date: string;
-        result: Awaited<ReturnType<typeof analyzeRecruitingEmail>>;
+        body: string;
       }
 
-      async function fetchAndAnalyze(msgId: string): Promise<FetchedEmail | null> {
-        try {
-          const full = await fetchEmailContent(freshToken, msgId);
-          const { subject, sender, date } = extractEmailHeaders(full);
-          const body = extractEmailBody(full);
-          const result = await analyzeRecruitingEmail(subject, sender, body, companies);
-          completedAnalysis++;
-          setSyncProgress(`Analyzed ${completedAnalysis} of ${newMsgs.length} emails…`);
-          return { subject, sender, date, result };
-        } catch (err) {
-          if (err instanceof Error && err.message === "GMAIL_UNAUTHORIZED") {
-            unauthorized = true;
-            return null;
+      const rawEmails: (RawEmail | null)[] = new Array(newMsgs.length);
+      let nextFetchIndex = 0;
+      async function fetchWorker() {
+        while (nextFetchIndex < newMsgs.length) {
+          const i = nextFetchIndex++;
+          try {
+            const full = await fetchEmailContent(freshToken, newMsgs[i].id);
+            const { subject, sender, date } = extractEmailHeaders(full);
+            rawEmails[i] = { subject, sender, date, body: extractEmailBody(full) };
+          } catch (err) {
+            if (err instanceof Error && err.message === "GMAIL_UNAUTHORIZED") {
+              unauthorized = true;
+            } else {
+              console.error("Email fetch error:", err);
+            }
+            rawEmails[i] = null;
           }
-          completedAnalysis++;
-          console.error("Email processing error:", err);
-          return null;
+          completedFetch++;
+          setSyncProgress(`Fetched ${completedFetch} of ${newMsgs.length} emails…`);
         }
       }
-
-      const fetched: (FetchedEmail | null)[] = new Array(newMsgs.length);
-      let nextIndex = 0;
-      async function worker() {
-        while (nextIndex < newMsgs.length) {
-          const i = nextIndex++;
-          fetched[i] = await fetchAndAnalyze(newMsgs[i].id);
-        }
-      }
-      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, newMsgs.length) }, worker));
+      await Promise.all(
+        Array.from({ length: Math.min(FETCH_CONCURRENCY, newMsgs.length) }, fetchWorker),
+      );
 
       if (unauthorized) {
         clearToken();
@@ -208,11 +244,43 @@ export function useEmailAgent() {
         throw new Error("Gmail session expired — please reconnect.");
       }
 
-      // Phase 2: apply pipeline mutations sequentially, in original message
-      // order — dedup/match logic needs to see companies added by earlier
-      // emails in this same sync, so this part stays serial (it's fast: no
-      // network calls, just local state updates).
-      setSyncProgress("Updating pipeline…");
+      // Phase 1b: analyze in batches of BATCH_SIZE — one Gemini call covers
+      // BATCH_SIZE emails instead of one call each.
+      const BATCH_SIZE = 10;
+
+      interface FetchedEmail {
+        subject: string;
+        sender: string;
+        date: string;
+        result: Awaited<ReturnType<typeof analyzeRecruitingEmailsBatch>>[number];
+      }
+
+      const fetched: (FetchedEmail | null)[] = new Array(newMsgs.length).fill(null);
+      const validIndices = rawEmails
+        .map((e, i) => (e ? i : -1))
+        .filter((i) => i >= 0);
+
+      for (let start = 0; start < validIndices.length; start += BATCH_SIZE) {
+        const batchIndices = validIndices.slice(start, start + BATCH_SIZE);
+        const batchInput = batchIndices.map((i) => {
+          const raw = rawEmails[i]!;
+          return { subject: raw.subject, sender: raw.sender, body: raw.body };
+        });
+        const results = await analyzeRecruitingEmailsBatch(batchInput, companies);
+        batchIndices.forEach((origIndex, j) => {
+          const raw = rawEmails[origIndex]!;
+          fetched[origIndex] = { subject: raw.subject, sender: raw.sender, date: raw.date, result: results[j] };
+        });
+        setSyncProgress(
+          `Analyzed ${Math.min(start + BATCH_SIZE, validIndices.length)} of ${validIndices.length} emails…`,
+        );
+      }
+
+      // Phase 2: turn each analysis into a log entry — no pipeline mutation
+      // happens here. Actionable results (new company, status advance, or a
+      // note) become a "pending" suggestion for the user to approve/reject;
+      // everything else is a purely informational skip.
+      setSyncProgress("Building suggestions…");
 
       for (let i = 0; i < newMsgs.length; i++) {
         const entry = fetched[i];
@@ -236,70 +304,78 @@ export function useEmailAgent() {
             company_name: result?.company_name || "",
             action_taken: "",
             raw_summary: result?.key_info || "",
+            review_status: "none",
           };
 
           if (!result || !result.is_recruiting_email) {
             logRow.action_taken = "Skipped — not a recruiting email";
             skipped++;
           } else {
-            let matched = companies.find(
+            const matched = companies.find(
               (c) => c.name.toLowerCase() === (result.company_name ?? "").toLowerCase(),
             );
-            let justAdded = false;
             const mappedStatus = result.status_update ? STATUS_MAP[result.status_update] : undefined;
+            const canCreateNew = !matched && !!result.company_name && result.confidence === "high";
 
-            if (!matched && result.company_name && result.confidence === "high") {
-              matched = store.addCompany({ name: result.company_name, status: mappedStatus ?? "Applied" });
-              companies = [...companies, matched];
-              justAdded = true;
-            }
-
-            if (matched) logRow.company_id = matched.id;
-
-            if (matched && result.confidence === "high" && mappedStatus) {
-              const roleIndex = pickRoleIndex(matched);
-              if (justAdded) {
-                logRow.action_taken = `Added to pipeline as ${mappedStatus}: ${matched.name}`;
-                updated++;
-              } else {
-                const curStatus = matched.roles[roleIndex].status;
-                if (STATUS_RANK[mappedStatus] > STATUS_RANK[curStatus]) {
-                  store.updateRoleField(matched.id, roleIndex, "status", mappedStatus);
-                  logRow.action_taken = `Updated status: ${curStatus} → ${mappedStatus}`;
-                  updated++;
-                } else {
-                  logRow.action_taken = `Status not advanced (${mappedStatus} ≤ current ${curStatus})`;
-                  skipped++;
-                }
-              }
-            } else if (justAdded) {
-              logRow.action_taken = `Added to pipeline: ${matched!.name}`;
-              updated++;
+            if (canCreateNew) {
+              logRow.pending = {
+                kind: "new_company",
+                company_name: result.company_name!,
+                proposed_status: mappedStatus ?? "Applied",
+                note: result.key_info ?? null,
+              };
+              logRow.action_taken = `Suggested: add "${result.company_name}" to pipeline as ${logRow.pending.proposed_status}`;
+              logRow.review_status = "pending";
+              suggested++;
             } else if (!matched) {
               logRow.action_taken = result.company_name
                 ? `Company not in pipeline: ${result.company_name}`
                 : "Could not identify company";
               skipped++;
-            } else if (result.confidence === "low") {
-              logRow.action_taken = `Low confidence · suggested: ${mappedStatus || "no status"}`;
-              skipped++;
             } else {
-              logRow.action_taken = "No status change detected";
-              skipped++;
-            }
-
-            // Always append key_info as a timestamped note on the matched role
-            if (result.key_info && matched) {
+              logRow.company_id = matched.id;
               const roleIndex = pickRoleIndex(matched);
-              const note = `[${new Date().toLocaleDateString()} via email] ${result.key_info}`;
-              store.appendRoleNote(matched.id, roleIndex, note);
+              const curStatus = matched.roles[roleIndex].status;
+              const canAdvance =
+                result.confidence === "high" && !!mappedStatus && STATUS_RANK[mappedStatus] > STATUS_RANK[curStatus];
+
+              if (canAdvance) {
+                logRow.pending = {
+                  kind: "status_update",
+                  company_name: matched.name,
+                  current_status: curStatus,
+                  proposed_status: mappedStatus,
+                  note: result.key_info ?? null,
+                };
+                logRow.action_taken = `Suggested: ${matched.name} ${curStatus} → ${mappedStatus}`;
+                logRow.review_status = "pending";
+                suggested++;
+              } else if (result.key_info) {
+                logRow.pending = {
+                  kind: "note_only",
+                  company_name: matched.name,
+                  note: result.key_info,
+                };
+                logRow.action_taken = `Suggested: add note to ${matched.name}`;
+                logRow.review_status = "pending";
+                suggested++;
+              } else if (mappedStatus) {
+                logRow.action_taken = `Status not advanced (${mappedStatus} ≤ current ${curStatus})`;
+                skipped++;
+              } else if (result.confidence === "low") {
+                logRow.action_taken = `Low confidence · suggested: ${mappedStatus || "no status"}`;
+                skipped++;
+              } else {
+                logRow.action_taken = "No status change detected";
+                skipped++;
+              }
             }
           }
 
           inserted.push(logRow);
         } catch (err) {
           skipped++;
-          console.error("Pipeline update error:", err);
+          console.error("Suggestion build error:", err);
         }
       }
 
@@ -307,8 +383,7 @@ export function useEmailAgent() {
       const nextLog = [...reversedInserted, ...existingLog];
       saveLog(nextLog);
       setAgentLog(nextLog.slice(0, LOG_MAX_ENTRIES));
-      setLastSyncResult({ processed, updated, skipped });
-      setSyncSummary(buildSyncSummary(inserted));
+      setLastSyncResult({ processed, suggested, skipped });
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : "Sync failed.");
     } finally {
@@ -317,8 +392,40 @@ export function useEmailAgent() {
     }
   }
 
+  function approveSuggestion(entry: AgentLogEntry, store: EmailAgentStore) {
+    const updated = applyPendingChange(entry, store);
+    const nextLog = loadLog().map((l) => (l.id === entry.id ? updated : l));
+    saveLog(nextLog);
+    setAgentLog(nextLog.slice(0, LOG_MAX_ENTRIES));
+  }
+
+  function rejectSuggestion(entry: AgentLogEntry) {
+    const nextLog = loadLog().map((l) =>
+      l.id === entry.id ? { ...l, review_status: "rejected" as const, action_taken: `${l.action_taken} [rejected]` } : l,
+    );
+    saveLog(nextLog);
+    setAgentLog(nextLog.slice(0, LOG_MAX_ENTRIES));
+  }
+
+  function approveAllPending(store: EmailAgentStore) {
+    const nextLog = loadLog().map((l) => (l.review_status === "pending" ? applyPendingChange(l, store) : l));
+    saveLog(nextLog);
+    setAgentLog(nextLog.slice(0, LOG_MAX_ENTRIES));
+  }
+
+  function rejectAllPending() {
+    const nextLog = loadLog().map((l) =>
+      l.review_status === "pending"
+        ? { ...l, review_status: "rejected" as const, action_taken: `${l.action_taken} [rejected]` }
+        : l,
+    );
+    saveLog(nextLog);
+    setAgentLog(nextLog.slice(0, LOG_MAX_ENTRIES));
+  }
+
   function undoStatusUpdate(logEntry: AgentLogEntry, store: EmailAgentStore) {
-    // Parse "Updated status: old → new"
+    // Parse "Updated status: old → new" — only present once a status_update
+    // suggestion has actually been approved.
     const match = logEntry.action_taken.match(/Updated status: (.+) → (.+)/);
     if (!match || !logEntry.company_id) return;
     const [, oldStatus] = match;
@@ -338,6 +445,10 @@ export function useEmailAgent() {
     authenticate,
     disconnect,
     syncEmails,
+    approveSuggestion,
+    rejectSuggestion,
+    approveAllPending,
+    rejectAllPending,
     undoStatusUpdate,
     agentLog,
     syncing,
@@ -345,6 +456,5 @@ export function useEmailAgent() {
     lastSyncResult,
     syncError,
     setSyncError,
-    syncSummary,
   };
 }

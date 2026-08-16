@@ -162,17 +162,62 @@ export async function fetchEmailContent(accessToken: string, messageId: string):
   return res.json();
 }
 
+function decodeBase64Url(data: string): string {
+  return atob(data.replace(/-/g, "+").replace(/_/g, "/"));
+}
+
+// Multipart emails nest parts arbitrarily deep (multipart/mixed wrapping
+// multipart/alternative wrapping the actual text/plain and text/html
+// leaves, especially once attachments or inline images are involved) — a
+// flat top-level scan misses most of them, which is why some bodies came
+// back empty.
+function findPart(payload: any, mimeType: string): any {
+  if (!payload) return null;
+  if (payload.mimeType === mimeType && payload.body?.data) return payload;
+  for (const part of payload.parts || []) {
+    const found = findPart(part, mimeType);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Strips an HTML email down to readable text — drop <style>/<script>/
+// comments entirely, turn block-level tags into line breaks, strip the rest
+// of the markup, and unescape the handful of entities that show up in real
+// mail. Not a full HTML parser, just enough to keep Gemini's input as
+// signal instead of markup noise.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(br|\/p|\/div|\/tr|\/li|\/h[1-6])\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&rsquo;|&lsquo;/gi, "'")
+    .replace(/&rdquo;|&ldquo;/gi, '"')
+    .replace(/&mdash;/gi, "—")
+    .replace(/&ndash;/gi, "–")
+    .replace(/[ \t]+/g, " ")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function extractEmailBody(message: any): string {
   const payload = message.payload;
   if (!payload) return "";
-  const parts = payload.parts || [];
-  const textPart = parts.find((p: any) => p.mimeType === "text/plain");
-  if (textPart?.body?.data) {
-    return atob(textPart.body.data.replace(/-/g, "+").replace(/_/g, "/"));
-  }
-  if (payload.body?.data) {
-    return atob(payload.body.data.replace(/-/g, "+").replace(/_/g, "/"));
-  }
+
+  const plainPart = findPart(payload, "text/plain");
+  if (plainPart) return decodeBase64Url(plainPart.body.data);
+
+  const htmlPart = findPart(payload, "text/html");
+  if (htmlPart) return htmlToText(decodeBase64Url(htmlPart.body.data));
+
   return "";
 }
 

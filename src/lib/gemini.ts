@@ -4,6 +4,8 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
 export async function callGemini(prompt: string, systemInstruction = ""): Promise<string> {
+  console.log("Gemini request:", { systemInstruction, prompt });
+
   const response = await fetch(`${BASE_URL}?key=${API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -23,5 +25,7 @@ export async function callGemini(prompt: string, systemInstruction = ""): Promis
     console.error("Gemini unexpected response:", JSON.stringify(data));
     throw new Error("No response from Gemini.");
   }
+
+  console.log("Gemini response:", text);
   return text;
 }
