@@ -3,9 +3,11 @@ import { Topbar } from "./components/layout/Topbar";
 import { Sidebar } from "./components/pipeline/Sidebar";
 import { CompanyDetail } from "./components/pipeline/CompanyDetail";
 import { EmailAgentPanel } from "./components/email/EmailAgentPanel";
+import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { usePipelineStore } from "./hooks/usePipelineStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useEmailAgent } from "./hooks/useEmailAgent";
+import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 
 type Tab = "Pipeline" | "Practice" | "AI Coach" | "Resume";
 const TABS: Tab[] = ["Pipeline", "Practice", "AI Coach", "Resume"];
@@ -14,6 +16,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Pipeline");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEmailPanelOpen, setIsEmailPanelOpen] = useState(false);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 720px)");
 
   const {
@@ -50,6 +53,16 @@ export default function App() {
   const emailAgentStore = { companies, addCompany, updateRoleField, appendRoleNote };
   const pendingSuggestions = agentLog.filter((e) => e.review_status === "pending");
 
+  const {
+    status: leetCodeStatus,
+    username: leetCodeUsername,
+    stats: leetCodeStats,
+    lastSyncedAt: leetCodeLastSyncedAt,
+    error: leetCodeError,
+    connect: connectLeetCode,
+    resync: resyncLeetCode,
+  } = useLeetCodeSync();
+
   // Auto-close the drawer if the viewport grows past the mobile breakpoint.
   useEffect(() => {
     if (!isMobile) setIsDrawerOpen(false);
@@ -63,6 +76,7 @@ export default function App() {
         isEmailConnected={isEmailConnected}
         isEmailSyncing={emailSyncing}
         onOpenEmailAgent={() => setIsEmailPanelOpen(true)}
+        onOpenSettings={() => setIsSettingsPanelOpen(true)}
       />
 
       <nav className="tab-bar" aria-label="Sections">
@@ -125,6 +139,19 @@ export default function App() {
           onRejectSuggestion={rejectSuggestion}
           onApproveAllSuggestions={() => approveAllPending(emailAgentStore)}
           onRejectAllSuggestions={rejectAllPending}
+        />
+      )}
+
+      {isSettingsPanelOpen && (
+        <SettingsPanel
+          onClose={() => setIsSettingsPanelOpen(false)}
+          leetCodeStatus={leetCodeStatus}
+          leetCodeUsername={leetCodeUsername}
+          leetCodeStats={leetCodeStats}
+          leetCodeLastSyncedAt={leetCodeLastSyncedAt}
+          leetCodeError={leetCodeError}
+          onConnectLeetCode={connectLeetCode}
+          onResyncLeetCode={resyncLeetCode}
         />
       )}
     </div>

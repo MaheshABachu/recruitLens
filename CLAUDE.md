@@ -26,11 +26,15 @@ VITE_SUPABASE_ANON_KEY=  # anon (legacy JWT) key — RLS policies are permissive
 
 ## Supabase
 
-Project `recruitLens` (`sytbbdmrkzfrpqtmioiv`), same org as the sibling `interview-os` project. Three tables:
+Project `recruitLens` (`sytbbdmrkzfrpqtmioiv`), same org as the sibling `interview-os` project. Tables:
 - `companies` / `roles` (child, `company_id` FK, `on delete cascade`) — column names mirror `src/types/pipeline.ts`'s `Company`/`Role` shapes except `group` → `category` (`group` is a reserved word) and camelCase → snake_case (`nextAction` → `next_action`, etc.). `status` is a free-text column with a `CHECK` constraint against the 7 `PipelineStatus` values — no enum, no translation layer, matching how the app already treats status as the display string directly.
 - `email_sync_state` — single row (`id = 1`, always upsert, same "exactly one row" convention as interview-os's `interview_profile`/`leetcode_sync`), holds `last_subject`: the watermark the email agent uses to know where the previous sync left off. See `emailAgentArchitecture.md`.
+- `leetcode_account` — same singleton-row convention (`id = 1`) as `email_sync_state`. `leetcodePlan.md`'s original schema had a `user_id` FK; dropped in favor of the singleton row since this app has no auth (see below) — there's only ever one account. Holds `username`, `sync_status` (`'idle' | 'syncing' | 'error'`), `last_synced_at`, `last_error`, and the solved-count stats (`solved_count`/`easy_count`/`medium_count`/`hard_count`).
+- `leetcode_problems` / `leetcode_solves` (child, `problem_id` FK, `on delete cascade`, `unique (problem_id)` since it's one account) — populated by the `leetcode-sync` Edge Function from LeetCode's public GraphQL API. That API hard-caps `recentAcSubmissionList` at 20 entries regardless of the requested limit, so a sync only ever sees the most recent 20 accepted submissions — `leetcode_solves` accumulates across repeated syncs, it isn't backfilled in one shot. `pg_cron` daily resync is deferred (see `leetcodeSyncTodo.md`); for now `leetcode-sync` only runs on manual Connect/Resync from the settings panel.
 
-**No auth** (per `plan.md`'s explicit non-goals) — RLS is enabled on all three tables but with `using (true) with check (true)` policies for `anon`/`authenticated`, so the published anon key has full read/write. This is a deliberate single-user-prototype tradeoff, not an oversight — don't "fix" it by adding user-scoped policies without an actual auth system to back them.
+**No auth** (per `plan.md`'s explicit non-goals) — RLS is enabled on every table but with `using (true) with check (true)` policies for `anon`/`authenticated`, so the published anon key has full read/write. This is a deliberate single-user-prototype tradeoff, not an oversight — don't "fix" it by adding user-scoped policies without an actual auth system to back them.
+
+**Edge Function:** `leetcode-sync` (deployed via Supabase, not part of this repo's build — see the project's Edge Functions in the Supabase dashboard) calls LeetCode's public GraphQL endpoint server-side (the browser can't call it directly — LeetCode's CORS headers only allow `leetcode.com` as an origin) and writes to `leetcode_account`/`leetcode_problems`/`leetcode_solves` using the service role key. Invoked from the frontend via `supabase.functions.invoke("leetcode-sync", { body })` in `src/lib/leetcode.ts` — an empty body resyncs the already-connected username, `{ username }` connects a new one.
 
 ## Architecture
 

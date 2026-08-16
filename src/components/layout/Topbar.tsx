@@ -1,4 +1,5 @@
 import { ThemeToggle } from "./ThemeToggle";
+import { SettingsButton } from "./SettingsButton";
 import { EmailAgentButton } from "../email/EmailAgentButton";
 
 interface TopbarProps {
@@ -7,6 +8,7 @@ interface TopbarProps {
   isEmailConnected: boolean;
   isEmailSyncing: boolean;
   onOpenEmailAgent: () => void;
+  onOpenSettings: () => void;
 }
 
 export function Topbar({
@@ -15,6 +17,7 @@ export function Topbar({
   isEmailConnected,
   isEmailSyncing,
   onOpenEmailAgent,
+  onOpenSettings,
 }: TopbarProps) {
   return (
     <header className="topbar">
@@ -48,6 +51,7 @@ export function Topbar({
           isSyncing={isEmailSyncing}
           onClick={onOpenEmailAgent}
         />
+        <SettingsButton onClick={onOpenSettings} />
         <ThemeToggle />
       </div>
     </header>
