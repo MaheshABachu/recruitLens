@@ -1112,10 +1112,29 @@ button:disabled {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
+  max-height: 200px;
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  overflow: hidden;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    max-height 0.22s ease,
+    padding 0.22s ease;
 }
 
 .suggestion-review__row + .suggestion-review__row {
   border-top: 1px solid var(--border);
+}
+
+.suggestion-review__row--exiting {
+  opacity: 0;
+  transform: translateX(-12px) scale(0.98);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-color: transparent;
+  pointer-events: none;
 }
 
 .suggestion-review__main {
