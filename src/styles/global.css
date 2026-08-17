@@ -411,6 +411,8 @@ button:disabled {
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -423,6 +425,16 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text-dim);
+}
+
+/* Stretches the card's content block (everything after the title) to fill
+   any extra height the grid gave the card — e.g. company-detail__row makes
+   Details and Company questions the same height, and this is what lets
+   Company questions' list actually grow into that space instead of leaving
+   it blank. */
+.card > *:last-child {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---------- Company detail ---------- */
@@ -525,6 +537,16 @@ button:disabled {
 
 .company-detail__status-row {
   display: flex;
+}
+
+.company-detail__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.company-detail__row--single {
+  grid-template-columns: 1fr;
 }
 
 /* ---------- Pipeline tracker (signature element) ---------- */
@@ -632,7 +654,8 @@ button:disabled {
 /* ---------- Field grid ---------- */
 .field-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+  align-content: start;
   gap: 16px 20px;
 }
 
@@ -747,6 +770,10 @@ button:disabled {
   }
 
   .materials-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-detail__row {
     grid-template-columns: 1fr;
   }
 }
@@ -1597,7 +1624,9 @@ button:disabled {
 .company-questions__list {
   display: flex;
   flex-direction: column;
-  max-height: 320px;
+  flex: 1;
+  min-height: 180px;
+  max-height: 260px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

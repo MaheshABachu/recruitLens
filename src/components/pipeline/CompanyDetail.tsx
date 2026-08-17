@@ -55,22 +55,24 @@ export function CompanyDetail({
 
       <PipelineTracker status={activeRole.status} />
 
-      <Card title="Details" className="company-detail__section">
-        <FieldGrid
-          role={activeRole}
-          onChange={(field, value) => onUpdateRoleField(company.id, activeRoleIndex, field, value)}
-        />
-      </Card>
+      <div className={`company-detail__row ${questions.length === 0 ? "company-detail__row--single" : ""}`}>
+        <Card title="Details" className="company-detail__section">
+          <FieldGrid
+            role={activeRole}
+            onChange={(field, value) => onUpdateRoleField(company.id, activeRoleIndex, field, value)}
+          />
+        </Card>
+
+        {questions.length > 0 && (
+          <Card title="Company questions" className="company-detail__section">
+            <CompanyQuestions questions={questions} solvedSlugs={solvedSlugs} />
+          </Card>
+        )}
+      </div>
 
       <Card title="Application materials" className="company-detail__section">
         <MaterialsSection role={activeRole} />
       </Card>
-
-      {questions.length > 0 && (
-        <Card title="Company questions" className="company-detail__section">
-          <CompanyQuestions questions={questions} solvedSlugs={solvedSlugs} />
-        </Card>
-      )}
     </main>
   );
 }

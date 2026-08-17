@@ -16,7 +16,7 @@ const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
 ];
 
 const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
-  { value: "all", label: "All difficulties" },
+  { value: "all", label: "Difficulty" },
   { value: "easy", label: "Easy" },
   { value: "medium", label: "Medium" },
   { value: "hard", label: "Hard" },
@@ -91,8 +91,8 @@ export function CompanyQuestions({ questions, solvedSlugs }: CompanyQuestionsPro
           onChange={(e) => setSortBy(e.target.value as SortBy)}
           aria-label="Sort questions"
         >
-          <option value="frequency">Sort: Frequency</option>
-          <option value="name">Sort: Name</option>
+          <option value="frequency">Frequency</option>
+          <option value="name">Name</option>
         </select>
       </div>
 
