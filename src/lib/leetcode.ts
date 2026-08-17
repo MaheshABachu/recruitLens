@@ -39,7 +39,8 @@ export async function triggerLeetCodeSync(username?: string): Promise<void> {
 }
 
 // Slugs the connected account has an accepted solve for, keyed the same way
-// as company_questions.problem_slug so callers can do a plain Set lookup.
+// as lc_questions.slug (exposed to callers as CompanyQuestion.problem_slug)
+// so callers can do a plain Set lookup.
 // Only ever reflects what's made it into leetcode_solves — bounded by the
 // same "most recent 20 per sync" limitation as the sync itself.
 export async function getSolvedProblemSlugs(): Promise<Set<string>> {

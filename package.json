@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "import:company-questions": "tsx scripts/import-company-questions.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -15,9 +16,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "dotenv": "^17.4.2",
+    "papaparse": "^5.6.0",
+    "tsx": "^4.23.12",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
   }

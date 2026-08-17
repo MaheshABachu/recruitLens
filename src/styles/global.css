@@ -1678,9 +1678,15 @@ button:disabled {
   color: var(--red);
 }
 
-.company-questions__name {
+.company-questions__main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.company-questions__name {
   font-size: 13px;
   color: var(--text);
   overflow: hidden;
@@ -1691,6 +1697,14 @@ button:disabled {
 .company-questions__name:hover {
   color: var(--accent);
   text-decoration: underline;
+}
+
+.company-questions__topics {
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .company-questions__frequency {

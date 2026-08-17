@@ -11,8 +11,10 @@ type SolvedFilter = "all" | "solved" | "unsolved";
 
 const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
   { value: "all_time", label: "All time" },
-  { value: "90days", label: "Last 90 days" },
-  { value: "30days", label: "Last 30 days" },
+  { value: "6months_plus", label: "6+ months" },
+  { value: "6months", label: "6 months" },
+  { value: "3months", label: "3 months" },
+  { value: "30days", label: "30 days" },
 ];
 
 const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
@@ -124,14 +126,21 @@ export function CompanyQuestions({ questions, solvedSlugs }: CompanyQuestionsPro
                 <span className={`tag company-questions__difficulty company-questions__difficulty--${q.difficulty ?? "unknown"}`}>
                   {q.difficulty ?? "?"}
                 </span>
-                <a
-                  className="company-questions__name"
-                  href={q.leetcode_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {q.problem_name}
-                </a>
+                <span className="company-questions__main">
+                  <a
+                    className="company-questions__name"
+                    href={q.leetcode_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {q.problem_name}
+                  </a>
+                  {q.topics.length > 0 && (
+                    <span className="company-questions__topics" title={q.topics.join(", ")}>
+                      {q.topics.join(", ")}
+                    </span>
+                  )}
+                </span>
                 <span className="company-questions__frequency">{q.frequency_score.toFixed(1)}%</span>
               </li>
             );
