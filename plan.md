@@ -1,4 +1,4 @@
-# RecruitLens — Pipeline Build Plan (React Architecture)
+# Vantage — Pipeline Build Plan (React Architecture)
 
 **Scope of this pass:** Pipeline tab only. Practice, AI Coach, and Resume are not being built yet — the shell should acknowledge they exist (so the app doesn't feel broken) but nothing beyond Pipeline needs to function. Specifics on that below.
 

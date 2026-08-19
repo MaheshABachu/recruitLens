@@ -7,8 +7,8 @@ interface PipelineTrackerProps {
 
 /**
  * Pure presentational — takes a status, renders the 5-stage tracker. The
- * nodes double as RecruitLens's signature visual: the "current" node gets a
- * focus-ring pulse, echoing the lens motif in the product name.
+ * nodes double as Vantage's signature visual: the "current" node gets a
+ * focus-ring pulse.
  */
 export function PipelineTracker({ status }: PipelineTrackerProps) {
   const isRejected = status === "Rejected";

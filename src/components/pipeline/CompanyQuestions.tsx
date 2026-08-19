@@ -1,21 +1,15 @@
 import { useMemo, useState } from "react";
-import type { CompanyQuestion, QuestionDifficulty, QuestionTimeWindow } from "../../lib/companyQuestions";
+import { TIME_WINDOWS, type CompanyQuestion, type QuestionDifficulty, type QuestionTimeWindow } from "../../lib/companyQuestions";
 
 interface CompanyQuestionsProps {
   questions: CompanyQuestion[];
   solvedSlugs: Set<string>;
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 type SortBy = "frequency" | "name";
 type SolvedFilter = "all" | "solved" | "unsolved";
-
-const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
-  { value: "all_time", label: "All time" },
-  { value: "6months_plus", label: "6+ months" },
-  { value: "6months", label: "6 months" },
-  { value: "3months", label: "3 months" },
-  { value: "30days", label: "30 days" },
-];
 
 const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
   { value: "all", label: "Difficulty" },
@@ -24,7 +18,7 @@ const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
   { value: "hard", label: "Hard" },
 ];
 
-export function CompanyQuestions({ questions, solvedSlugs }: CompanyQuestionsProps) {
+export function CompanyQuestions({ questions, solvedSlugs, expanded, onToggleExpanded }: CompanyQuestionsProps) {
   const [timeWindow, setTimeWindow] = useState<QuestionTimeWindow>("all_time");
   const [difficulty, setDifficulty] = useState<QuestionDifficulty | "all">("all");
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>("all");
@@ -49,6 +43,13 @@ export function CompanyQuestions({ questions, solvedSlugs }: CompanyQuestionsPro
 
   return (
     <div className="company-questions">
+      <div className="topic-profile__title-row">
+        <h3 className="card__title">Company questions</h3>
+        <button type="button" className="topic-profile__toggle" onClick={onToggleExpanded} aria-expanded={expanded}>
+          {expanded ? "Collapse" : "Expand"}
+        </button>
+      </div>
+
       <div className="company-questions__filters">
         <select
           className="stage-filter__select"

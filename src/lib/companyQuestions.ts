@@ -13,6 +13,17 @@ export interface CompanyQuestion {
   topics: string[];
 }
 
+// Shared across CompanyQuestions and TopicProfile's time-window <select>s —
+// ordered newest-window-first, matches the descending-recency reading order
+// used throughout the Company questions filter.
+export const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
+  { value: "all_time", label: "All time" },
+  { value: "6months_plus", label: "6+ months" },
+  { value: "6months", label: "6 months" },
+  { value: "3months", label: "3 months" },
+  { value: "30days", label: "30 days" },
+];
+
 interface RawCompanyQuestionRow {
   time_window: QuestionTimeWindow;
   frequency_score: number;

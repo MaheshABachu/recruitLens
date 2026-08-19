@@ -17,7 +17,7 @@ const LOG_STORAGE_KEY = "email_agent_log";
 const LOG_MAX_ENTRIES = 300;
 
 // Gemini returns interview-os's snake_case status vocabulary — map it onto
-// RecruitLens's 7-stage PipelineStatus. "technical" has no dedicated stage
+// Vantage's 7-stage PipelineStatus. "technical" has no dedicated stage
 // here, so it folds into "Onsite" (the closest forward stage).
 const STATUS_MAP: Record<Exclude<EmailStatusUpdate, null>, PipelineStatus> = {
   not_applied: "Not Applied",

@@ -41,7 +41,7 @@ export function Topbar({
             </svg>
           </span>
           <span className="logo__text">
-            Recruit<span className="logo__accent">Lens</span>
+            Van<span className="logo__accent">tage</span>
           </span>
         </div>
       </div>

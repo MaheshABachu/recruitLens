@@ -1,4 +1,4 @@
-# RecruitLens — LeetCode Sync Build Plan
+# Vantage — LeetCode Sync Build Plan
 
 **Context:** Pipeline is built and working (per the screenshot). This is the next feature, not a rebuild — it extends the existing app rather than replacing anything in it.
 

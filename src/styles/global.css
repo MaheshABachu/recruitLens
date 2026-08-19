@@ -542,13 +542,94 @@ button:disabled {
 }
 
 .company-detail__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
   gap: 18px;
 }
 
-.company-detail__row--single {
-  grid-template-columns: 1fr;
+/* flex-basis (not display:grid's grid-template-columns) so the Details /
+   Topic profile split animates smoothly — grid-template-columns transitions
+   aren't reliably supported, flex-basis transitions are. */
+.company-detail__details-slot {
+  flex: 1 1 50%;
+  min-width: 0;
+  /* Own flex context so the Details <Card> inside actually stretches to
+     match this slot's stretched height — a plain block child wouldn't fill
+     a taller parent, it'd just sit at its own content height. */
+  display: flex;
+  flex-direction: column;
+  transition: flex-basis 0.3s ease;
+}
+
+.company-detail__details-slot > .card {
+  /* flex-direction: column's align-items:stretch only stretches the CROSS
+     axis (width) — height (the main axis) needs an explicit flex-grow to
+     actually fill the stretched slot instead of sitting at content height. */
+  flex: 1;
+  min-height: 0;
+}
+
+.company-detail__row--single .company-detail__details-slot {
+  flex: 1 1 auto;
+}
+
+.company-detail__details-slot--collapsed {
+  flex: 0 0 64px;
+}
+
+.company-detail__topic-slot {
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Generic symmetric split-card pair (either side can be the expanded one) —
+   used for the Company questions / Media tracking row. Unlike the Details /
+   Topic profile row above, both sides here are full Cards that can become
+   the collapsed strip, so no extra wrapper div is needed: the Card itself is
+   the direct flex child of .company-detail__row and squishes/stretches
+   directly via flex-basis. */
+.company-detail__split-card {
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+  transition: flex-basis 0.3s ease;
+}
+
+.company-detail__split-card--collapsed {
+  flex: 0 0 64px;
+}
+
+.company-detail__row--single .company-detail__split-card,
+.company-detail__row--single .company-detail__split-card--collapsed {
+  flex: 1 1 auto;
+}
+
+.collapse-strip {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-dim);
+}
+
+.collapse-strip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.collapse-strip__label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* ---------- Pipeline tracker (signature element) ---------- */
@@ -776,7 +857,22 @@ button:disabled {
   }
 
   .company-detail__row {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .company-detail__details-slot--collapsed,
+  .company-detail__split-card--collapsed {
+    flex-basis: auto;
+  }
+
+  .collapse-strip {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .collapse-strip__label {
+    writing-mode: horizontal-tb;
+    transform: none;
   }
 }
 
@@ -821,6 +917,19 @@ button:disabled {
 
   .detail-header__controls {
     justify-content: space-between;
+  }
+
+  .topic-profile__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topic-profile__body {
+    flex-direction: column;
+  }
+
+  .topic-profile__radar {
+    align-self: center;
   }
 
   .tracker__track {
@@ -1630,7 +1739,7 @@ button:disabled {
   flex: 1;
   min-width: 0;
   min-height: 180px;
-  max-height: 260px;
+  max-height: 360px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1719,4 +1828,330 @@ button:disabled {
   color: var(--text-faint);
   width: 48px;
   text-align: right;
+}
+
+/* ---------- Topic profile (radar chart of a company's tested concepts) ---------- */
+.topic-profile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+}
+
+/* Shared title-row + expand/collapse toggle pattern — also reused as-is by
+   CompanyQuestions and MediaTracking, not just Topic profile. */
+.topic-profile__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topic-profile__title-row .card__title {
+  margin: 0;
+}
+
+.topic-profile__toggle {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.topic-profile__toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Reveal animation: a single-row grid whose row track animates 0fr -> 1fr,
+   with the inner wrapper's overflow hidden so content height is clipped
+   during the transition. Avoids needing JS height measurement, and works
+   for arbitrary/variable content (the bars list length varies per company). */
+.topic-profile__expand,
+.topic-profile__bars-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.topic-profile__expand--open,
+.topic-profile__bars-wrap--open {
+  grid-template-rows: 1fr;
+}
+
+.topic-profile__expand-inner,
+.topic-profile__bars-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.topic-profile__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topic-profile__description {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.topic-profile__window-select {
+  flex-shrink: 0;
+  width: auto;
+}
+
+.topic-profile__empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.topic-profile__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 24px;
+}
+
+.topic-profile__radar {
+  flex-shrink: 0;
+  min-height: 0;
+  /* Height-driven (not a fixed width cap): fills whatever vertical room the
+     card actually has — which, now that Details truly stretches to match,
+     is however tall Details' own content naturally is — instead of leaving
+     dead space below a smaller fixed-size chart. */
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.topic-profile__bars-wrap {
+  /* basis 280 + wrap: drops below the radar instead of forcing an overflow
+     once the row can't fit both at whatever width the card actually has.
+     Collapses to 0 (both flex-grow and flex-basis) when not expanded, so it
+     doesn't reserve empty width next to the radar. */
+  flex: 1 1 280px;
+  min-width: 0;
+  transition: grid-template-rows 0.3s ease, flex-grow 0.3s ease, flex-basis 0.3s ease;
+}
+
+.topic-profile__bars-wrap:not(.topic-profile__bars-wrap--open) {
+  flex-grow: 0;
+  flex-basis: 0;
+}
+
+.topic-profile__bars {
+  display: flex;
+  flex-direction: column;
+  max-height: clamp(280px, 30vw, 400px);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.topic-profile__bar-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+  padding: 7px 12px;
+}
+
+.topic-profile__bar-row + .topic-profile__bar-row {
+  border-top: 1px solid var(--border);
+}
+
+.topic-profile__bar-label {
+  flex: 0 0 140px;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topic-profile__bar-track {
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.topic-profile__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.topic-profile__bar-score {
+  flex-shrink: 0;
+  width: 28px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+/* ---------- Media tracking (mock — no live scraping source yet) ---------- */
+.media-tracking {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 12px;
+}
+
+.media-tracking__preview-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.media-tracking__description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.media-tracking__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.media-tracking__source-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.media-tracking__source-chip--reddit {
+  color: #ff4500;
+  background: color-mix(in srgb, #ff4500 14%, transparent);
+  border-color: transparent;
+}
+
+.media-tracking__source-chip--discord {
+  color: #5865f2;
+  background: color-mix(in srgb, #5865f2 14%, transparent);
+  border-color: transparent;
+}
+
+.media-tracking__posts {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.media-tracking__post {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.media-tracking__post + .media-tracking__post {
+  border-top: 1px solid var(--border);
+}
+
+.media-tracking__source-tag {
+  flex-shrink: 0;
+  width: 62px;
+  text-align: center;
+  padding: 3px 0;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.media-tracking__source-tag--reddit {
+  color: #ff4500;
+  background: color-mix(in srgb, #ff4500 14%, transparent);
+}
+
+.media-tracking__source-tag--discord {
+  color: #5865f2;
+  background: color-mix(in srgb, #5865f2 14%, transparent);
+}
+
+.media-tracking__post-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.media-tracking__post-channel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.media-tracking__post-snippet {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.media-tracking__post-time {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* ---------- Loading state (async section placeholder) ---------- */
+.loading-state {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: loading-spin 0.7s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

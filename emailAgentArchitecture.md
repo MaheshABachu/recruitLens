@@ -2,7 +2,7 @@
 
 Read-only Gmail scan that classifies recruiting emails via Gemini and surfaces pipeline changes for the user to **approve or reject** — it never mutates the pipeline on its own. The agent itself talks only to Gmail and Gemini directly (no backend of its own); approved suggestions flow through `usePipelineStore`, which now persists to Supabase (see `CLAUDE.md`). The agent's own state (sync log, approval queue) still lives in `localStorage`, not Supabase.
 
-Ported from a sibling project (interview-os) and adapted to RecruitLens's `PipelineStatus` shape.
+Ported from a sibling project (interview-os) and adapted to Vantage's `PipelineStatus` shape.
 
 ## Files
 
@@ -89,7 +89,7 @@ Returns a JSON array, one object per email, in the same order, each tagged with 
    - Matched an existing company, no status advance, but `key_info` present → a `kind: "note_only"` suggestion (notes are suggested regardless of confidence, same as the old auto-append behavior — they're just gated behind approval now instead of applying instantly).
    - Everything else (status not advanced, low confidence, no match, no info) → informational skip, `review_status: "none"`, nothing to approve.
    - A suggestion's `note`, if present, rides along with whatever else that suggestion does — approving a `status_update` also appends its note in the same action, it isn't a separate approval step.
-   - Gemini's snake_case `status_update` is translated to RecruitLens's `PipelineStatus` via `STATUS_MAP`. `"technical"` has no dedicated stage and folds into `"Onsite"`.
+   - Gemini's snake_case `status_update` is translated to Vantage's `PipelineStatus` via `STATUS_MAP`. `"technical"` has no dedicated stage and folds into `"Onsite"`.
 8. **Log.** Every processed email produces an `AgentLogEntry`, prepended to the existing log (newest first), capped at 300 entries, persisted to `localStorage` (`email_agent_log`).
 
 **Known limitation:** because nothing is applied during the sync itself, `companies` is a fixed snapshot for the whole of phase 2 — if two emails in the same sync both concern a company that doesn't exist yet, you'll get two separate `new_company` suggestions for it rather than one being merged into the other. Reject the duplicate when reviewing. Same applies if two emails in one sync both propose advancing the same existing company to different stages — both suggestions target the *current* stored status independently, so approve the one that's actually further along and reject/ignore the other.
