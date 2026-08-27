@@ -9,6 +9,8 @@ interface TopbarProps {
   isEmailSyncing: boolean;
   onOpenEmailAgent: () => void;
   onOpenSettings: () => void;
+  userEmail?: string | null;
+  onSignOut: () => void;
 }
 
 export function Topbar({
@@ -18,6 +20,8 @@ export function Topbar({
   isEmailSyncing,
   onOpenEmailAgent,
   onOpenSettings,
+  userEmail,
+  onSignOut,
 }: TopbarProps) {
   return (
     <header className="topbar">
@@ -53,6 +57,11 @@ export function Topbar({
         />
         <SettingsButton onClick={onOpenSettings} />
         <ThemeToggle />
+        {userEmail && (
+          <button type="button" className="account-btn" onClick={onSignOut} title={userEmail}>
+            {userEmail[0]?.toUpperCase()}
+          </button>
+        )}
       </div>
     </header>
   );

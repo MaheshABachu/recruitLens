@@ -5,15 +5,18 @@ import { CompanyDetail } from "./components/pipeline/CompanyDetail";
 import { EmailAgentPanel } from "./components/email/EmailAgentPanel";
 import { JobsBoard } from "./components/jobs/JobsBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { LoginScreen } from "./components/auth/LoginScreen";
 import { usePipelineStore } from "./hooks/usePipelineStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useEmailAgent } from "./hooks/useEmailAgent";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
+import { useAuth } from "./hooks/useAuth";
 
 type Tab = "Pipeline" | "Jobs";
 const TABS: Tab[] = ["Pipeline", "Jobs"];
 
 export default function App() {
+  const { session, loading: authLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("Pipeline");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEmailPanelOpen, setIsEmailPanelOpen] = useState(false);
@@ -69,6 +72,9 @@ export default function App() {
     if (!isMobile) setIsDrawerOpen(false);
   }, [isMobile]);
 
+  if (authLoading) return null;
+  if (!session) return <LoginScreen />;
+
   return (
     <div className="app">
       <Topbar
@@ -78,6 +84,8 @@ export default function App() {
         isEmailSyncing={emailSyncing}
         onOpenEmailAgent={() => setIsEmailPanelOpen(true)}
         onOpenSettings={() => setIsSettingsPanelOpen(true)}
+        userEmail={session.user.email}
+        onSignOut={signOut}
       />
 
       <nav className="tab-bar" aria-label="Sections">
