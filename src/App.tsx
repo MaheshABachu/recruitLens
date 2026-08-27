@@ -3,14 +3,15 @@ import { Topbar } from "./components/layout/Topbar";
 import { Sidebar } from "./components/pipeline/Sidebar";
 import { CompanyDetail } from "./components/pipeline/CompanyDetail";
 import { EmailAgentPanel } from "./components/email/EmailAgentPanel";
+import { JobsBoard } from "./components/jobs/JobsBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { usePipelineStore } from "./hooks/usePipelineStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useEmailAgent } from "./hooks/useEmailAgent";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 
-type Tab = "Pipeline" | "Practice" | "AI Coach" | "Resume";
-const TABS: Tab[] = ["Pipeline", "Practice", "AI Coach", "Resume"];
+type Tab = "Pipeline" | "Jobs";
+const TABS: Tab[] = ["Pipeline", "Jobs"];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Pipeline");
@@ -81,45 +82,43 @@ export default function App() {
 
       <nav className="tab-bar" aria-label="Sections">
         {TABS.map((tab) => {
-          const isPipeline = tab === "Pipeline";
           const isActive = tab === activeTab;
           return (
             <button
               key={tab}
               type="button"
-              className={`tab-bar__tab ${isActive ? "tab-bar__tab--active" : ""} ${
-                !isPipeline ? "tab-bar__tab--disabled" : ""
-              }`}
-              onClick={isPipeline ? () => setActiveTab(tab) : undefined}
-              disabled={!isPipeline}
-              aria-disabled={!isPipeline}
+              className={`tab-bar__tab ${isActive ? "tab-bar__tab--active" : ""}`}
+              onClick={() => setActiveTab(tab)}
               aria-current={isActive ? "true" : undefined}
             >
               {tab}
-              {!isPipeline && <span className="tab-bar__soon">Soon</span>}
             </button>
           );
         })}
       </nav>
 
-      <div className="app__body">
-        <Sidebar
-          companies={companies}
-          activeCompanyId={activeCompany?.id ?? null}
-          onSelectCompany={selectCompany}
-          isDrawerOpen={isDrawerOpen}
-          onCloseDrawer={() => setIsDrawerOpen(false)}
-        />
-        <CompanyDetail
-          company={activeCompany}
-          activeRole={activeRole}
-          activeRoleIndex={activeRoleIndex}
-          onSelectRole={selectRole}
-          onTogglePriority={togglePriority}
-          onUpdateRoleField={updateRoleField}
-          onDeleteCompany={deleteCompany}
-        />
-      </div>
+      {activeTab === "Pipeline" ? (
+        <div className="app__body">
+          <Sidebar
+            companies={companies}
+            activeCompanyId={activeCompany?.id ?? null}
+            onSelectCompany={selectCompany}
+            isDrawerOpen={isDrawerOpen}
+            onCloseDrawer={() => setIsDrawerOpen(false)}
+          />
+          <CompanyDetail
+            company={activeCompany}
+            activeRole={activeRole}
+            activeRoleIndex={activeRoleIndex}
+            onSelectRole={selectRole}
+            onTogglePriority={togglePriority}
+            onUpdateRoleField={updateRoleField}
+            onDeleteCompany={deleteCompany}
+          />
+        </div>
+      ) : (
+        <JobsBoard />
+      )}
 
       {isEmailPanelOpen && (
         <EmailAgentPanel

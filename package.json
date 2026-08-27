@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "import:company-questions": "tsx scripts/import-company-questions.ts"
+    "import:company-questions": "tsx scripts/import-company-questions.ts",
+    "import:job-postings": "tsx scripts/import-job-postings.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
