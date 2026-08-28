@@ -1,8 +1,11 @@
 name: Sync job postings
 
 # GitHub Actions cron is UTC-only and has no DST awareness, so both the EDT
-# (17:00 UTC) and EST (16:00 UTC) offsets for noon ET are scheduled; the
-# guard step below no-ops whichever one doesn't land on the true local hour.
+# (17:00 UTC) and EST (16:00 UTC) offsets for noon ET are scheduled. No hour
+# guard: scheduled runs are frequently delayed well past their trigger time
+# (observed ~9h late), which made an exact-hour guard skip real syncs more
+# often than it filtered the redundant trigger. Both firing on the same day
+# is harmless — import:job-postings upserts on url_key.
 on:
   schedule:
     - cron: "0 17 * * *"
@@ -13,29 +16,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Guard against the non-DST-matching cron trigger
-        if: github.event_name == 'schedule'
-        run: |
-          hour=$(TZ=America/New_York date +%H)
-          if [ "$hour" != "12" ]; then
-            echo "Not noon ET (it's $hour:00 ET) — skipping, the other cron trigger will fire this."
-            echo "SKIP=true" >> "$GITHUB_ENV"
-          fi
-
       - uses: actions/checkout@v4
-        if: env.SKIP != 'true'
 
       - uses: actions/setup-node@v4
-        if: env.SKIP != 'true'
         with:
           node-version: 20
 
       - name: Install dependencies
-        if: env.SKIP != 'true'
         run: npm ci
 
       - name: Import job postings
-        if: env.SKIP != 'true'
         run: npm run import:job-postings
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
