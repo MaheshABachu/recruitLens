@@ -44,6 +44,27 @@ function chunk<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+// url_key values are full normalized URLs, so a `.in("url_key", batch)` filter
+// serializes them into the request's query string, not the body — batching by
+// item count alone (like `chunk`) can still produce a URL past reverse-proxy
+// length limits. Batch by character budget instead.
+function chunkByCharBudget(items: string[], maxChars: number): string[][] {
+  const out: string[][] = [];
+  let current: string[] = [];
+  let currentChars = 0;
+  for (const item of items) {
+    if (current.length > 0 && currentChars + item.length > maxChars) {
+      out.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push(item);
+    currentChars += item.length + 1;
+  }
+  if (current.length > 0) out.push(current);
+  return out;
+}
+
 async function fetchWithRetry(target: string, attempts = 3): Promise<Response | null> {
   for (let i = 0; i < attempts; i++) {
     try {
@@ -371,7 +392,7 @@ async function main() {
 
   const staleUrlKeys = existing.filter((r) => r.is_active && !merged.has(r.url_key)).map((r) => r.url_key);
   console.log(`Marking ${staleUrlKeys.length} stale postings inactive...`);
-  for (const batch of chunk(staleUrlKeys, CHUNK_SIZE)) {
+  for (const batch of chunkByCharBudget(staleUrlKeys, 4000)) {
     const { error } = await supabase
       .from("job_postings")
       .update({ is_active: false, updated_at: nowIso })
