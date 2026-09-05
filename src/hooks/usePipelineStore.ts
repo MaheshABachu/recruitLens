@@ -93,23 +93,26 @@ function enqueueWrite(action: string, op: () => PromiseLike<{ error: unknown }>)
 
 /**
  * Owns all Pipeline state and mutations. Backed by Supabase (`companies` +
- * `roles` tables) — hydrates once on mount, then every mutation updates
- * local state immediately and fires the matching Supabase write in the
- * background (optimistic — callers never await a network round trip).
+ * `roles` tables, scoped to `userId` — pass `null` until the auth session
+ * resolves) — hydrates once `userId` is available, then every mutation
+ * updates local state immediately and fires the matching Supabase write in
+ * the background (optimistic — callers never await a network round trip).
  * Components must go through these actions, never read or setState directly.
  */
-export function usePipelineStore() {
+export function usePipelineStore(userId: string | null) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [activeRoleIndex, setActiveRoleIndex] = useState(0);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     async function load() {
       const { data, error } = await supabase
         .from("companies")
         .select("*, roles(*)")
+        .eq("user_id", userId)
         .order("created_at", { ascending: true })
         .order("created_at", { referencedTable: "roles", ascending: true });
       if (cancelled) return;
@@ -124,7 +127,7 @@ export function usePipelineStore() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   const activeCompany = useMemo(
     () => companies.find((c) => c.id === activeCompanyId) ?? null,
@@ -150,7 +153,7 @@ export function usePipelineStore() {
     setCompanies((prev) => prev.map((c) => (c.id === companyId ? { ...c, priority: nextPriority } : c)));
 
     enqueueWrite("togglePriority", () =>
-      supabase.from("companies").update({ priority: nextPriority }).eq("id", companyId),
+      supabase.from("companies").update({ priority: nextPriority }).eq("id", companyId).eq("user_id", userId),
     );
   }
 
@@ -201,7 +204,9 @@ export function usePipelineStore() {
     // Queued in order — the role insert only actually reaches Postgres
     // after the company insert has, since both share the same write queue.
     enqueueWrite("addCompany", () =>
-      supabase.from("companies").insert({ id: companyId, name: input.name, category: "OTHER", problems: 0, priority: false }),
+      supabase
+        .from("companies")
+        .insert({ id: companyId, name: input.name, category: "OTHER", problems: 0, priority: false, user_id: userId }),
     );
     enqueueWrite("addCompany (role)", () =>
       supabase.from("roles").insert({ id: roleId, company_id: companyId, role: "Application", status: input.status }),
@@ -216,7 +221,9 @@ export function usePipelineStore() {
     setActiveRoleIndex(0);
 
     // roles cascade-delete in the DB via the company_id foreign key.
-    enqueueWrite("deleteCompany", () => supabase.from("companies").delete().eq("id", companyId));
+    enqueueWrite("deleteCompany", () =>
+      supabase.from("companies").delete().eq("id", companyId).eq("user_id", userId),
+    );
   }
 
   function appendRoleNote(companyId: string, roleIndex: number, note: string) {

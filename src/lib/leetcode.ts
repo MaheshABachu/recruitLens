@@ -1,9 +1,8 @@
 import { supabase } from "./supabase";
 
-const ACCOUNT_ID = 1;
-
+// leetcode_account is keyed by user_id (PK) and RLS-scoped to auth.uid(),
+// so a plain select with no filter already returns only the caller's row.
 export interface LeetCodeAccount {
-  id: number;
   username: string | null;
   sync_status: "idle" | "syncing" | "error";
   last_synced_at: string | null;
@@ -15,11 +14,7 @@ export interface LeetCodeAccount {
 }
 
 export async function getLeetCodeAccount(): Promise<LeetCodeAccount | null> {
-  const { data, error } = await supabase
-    .from("leetcode_account")
-    .select("*")
-    .eq("id", ACCOUNT_ID)
-    .maybeSingle();
+  const { data, error } = await supabase.from("leetcode_account").select("*").maybeSingle();
   if (error) {
     console.error("Failed to load LeetCode account:", error);
     return null;
@@ -43,6 +38,7 @@ export async function triggerLeetCodeSync(username?: string): Promise<void> {
 // so callers can do a plain Set lookup.
 // Only ever reflects what's made it into leetcode_solves — bounded by the
 // same "most recent 20 per sync" limitation as the sync itself.
+// RLS-scoped to auth.uid() — no explicit filter needed.
 export async function getSolvedProblemSlugs(): Promise<Set<string>> {
   const { data, error } = await supabase.from("leetcode_solves").select("leetcode_problems(slug)");
   if (error) {

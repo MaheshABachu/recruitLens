@@ -22,6 +22,7 @@ export default function App() {
   const [isEmailPanelOpen, setIsEmailPanelOpen] = useState(false);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 720px)");
+  const userId = session?.user.id ?? null;
 
   const {
     companies,
@@ -35,7 +36,7 @@ export default function App() {
     updateRoleField,
     deleteCompany,
     appendRoleNote,
-  } = usePipelineStore();
+  } = usePipelineStore(userId);
 
   const {
     isAuthenticated: isEmailConnected,
@@ -52,7 +53,7 @@ export default function App() {
     syncProgress: emailSyncProgress,
     lastSyncResult,
     syncError,
-  } = useEmailAgent();
+  } = useEmailAgent(userId);
 
   const emailAgentStore = { companies, addCompany, updateRoleField, appendRoleNote };
   const pendingSuggestions = agentLog.filter((e) => e.review_status === "pending");
@@ -65,7 +66,7 @@ export default function App() {
     error: leetCodeError,
     connect: connectLeetCode,
     resync: resyncLeetCode,
-  } = useLeetCodeSync();
+  } = useLeetCodeSync(userId);
 
   // Auto-close the drawer if the viewport grows past the mobile breakpoint.
   useEffect(() => {

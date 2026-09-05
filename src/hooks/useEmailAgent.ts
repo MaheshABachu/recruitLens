@@ -225,7 +225,7 @@ function applyPendingChange(
   };
 }
 
-export function useEmailAgent() {
+export function useEmailAgent(userId: string | null) {
   const [accessToken, setAccessToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [agentLog, setAgentLog] = useState<AgentLogEntry[]>(() => loadLog());
   const [syncing, setSyncing] = useState(false);
@@ -248,6 +248,10 @@ export function useEmailAgent() {
   async function syncEmails(store: EmailAgentStore) {
     if (!accessToken) {
       setSyncError("Not authenticated with Gmail.");
+      return;
+    }
+    if (!userId) {
+      setSyncError("Not signed in.");
       return;
     }
     setSyncing(true);
@@ -489,7 +493,7 @@ export function useEmailAgent() {
       // rawEmails is newest-first (same order as newMsgs) — the first
       // non-null entry is the newest subject this sync actually saw.
       const newestSubject = rawEmails.find((e) => e)?.subject;
-      if (newestSubject) await saveLastSeenSubject(newestSubject);
+      if (newestSubject) await saveLastSeenSubject(newestSubject, userId);
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : "Sync failed.");
     } finally {

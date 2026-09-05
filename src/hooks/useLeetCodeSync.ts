@@ -12,7 +12,7 @@ function deriveStatus(account: LeetCodeAccount | null): LeetCodeStatus {
   return "connected";
 }
 
-export function useLeetCodeSync() {
+export function useLeetCodeSync(userId: string | null) {
   const [account, setAccount] = useState<LeetCodeAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,9 +37,10 @@ export function useLeetCodeSync() {
   }, [refresh, stopPolling]);
 
   useEffect(() => {
+    if (!userId) return;
     refresh().finally(() => setLoading(false));
     return stopPolling;
-  }, [refresh, stopPolling]);
+  }, [userId, refresh, stopPolling]);
 
   async function connect(username: string) {
     const trimmed = username.trim();
@@ -47,7 +48,6 @@ export function useLeetCodeSync() {
     // Optimistic — the row itself flips to "syncing" the moment the Edge
     // Function starts, but polling won't catch that for up to POLL_INTERVAL_MS.
     setAccount((prev) => ({
-      id: 1,
       username: trimmed,
       sync_status: "syncing",
       last_synced_at: prev?.last_synced_at ?? null,
