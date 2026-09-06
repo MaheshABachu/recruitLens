@@ -14,6 +14,15 @@ import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
 import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
 
+type DetailTab = "details" | "leetcode" | "topic" | "media";
+
+const DETAIL_TABS: { id: DetailTab; label: string }[] = [
+  { id: "details", label: "Details" },
+  { id: "leetcode", label: "LeetCode" },
+  { id: "topic", label: "Topic Chart" },
+  { id: "media", label: "Media Tracking" },
+];
+
 interface CompanyDetailProps {
   company: Company | null;
   activeRole: Role | null;
@@ -37,14 +46,12 @@ export function CompanyDetail({
 }: CompanyDetailProps) {
   const { questions, loading: questionsLoading } = useCompanyQuestions(company?.name);
   const solvedSlugs = useLeetCodeSolvedSlugs();
-  const [topicExpanded, setTopicExpanded] = useState(false);
-  const [mediaRowExpanded, setMediaRowExpanded] = useState<"questions" | "media" | null>(null);
   const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>("details");
 
   useEffect(() => {
-    setTopicExpanded(false);
-    setMediaRowExpanded(null);
     setIsAddRoleOpen(false);
+    setActiveDetailTab("details");
   }, [company?.id]);
 
   if (!company || !activeRole) {
@@ -80,108 +87,62 @@ export function CompanyDetail({
 
       <PipelineTracker status={activeRole.status} />
 
-      <div
-        className={`company-detail__row ${
-          !questionsLoading && questions.length === 0 ? "company-detail__row--single" : ""
-        }`}
-      >
-        <div
-          className={`company-detail__details-slot ${topicExpanded ? "company-detail__details-slot--collapsed" : ""}`}
-        >
-          {topicExpanded ? (
-            <button
-              type="button"
-              className="details-strip"
-              onClick={() => setTopicExpanded(false)}
-              aria-label="Show details"
-              aria-expanded={false}
-            >
-              <span className="details-strip__label">Details</span>
-            </button>
-          ) : (
-            <Card title="Details" className="company-detail__section">
-              <FieldGrid
-                role={activeRole}
-                onChange={(field, value) => onUpdateRoleField(company.id, activeRoleIndex, field, value)}
-              />
-            </Card>
-          )}
-        </div>
+      <nav className="tab-bar company-detail__tabs" aria-label="Company detail sections">
+        {DETAIL_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`tab-bar__tab ${activeDetailTab === tab.id ? "tab-bar__tab--active" : ""}`}
+            onClick={() => setActiveDetailTab(tab.id)}
+            aria-current={activeDetailTab === tab.id ? "true" : undefined}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
-        {(questionsLoading || questions.length > 0) && (
-          <Card title={questionsLoading ? "Topic profile" : undefined} className="company-detail__section company-detail__topic-slot">
+      <div className="company-detail__tab-panel">
+        {activeDetailTab === "details" && (
+          <Card title="Details" className="company-detail__section">
+            <FieldGrid
+              role={activeRole}
+              onChange={(field, value) => onUpdateRoleField(company.id, activeRoleIndex, field, value)}
+            />
+          </Card>
+        )}
+
+        {activeDetailTab === "leetcode" && (
+          <Card title="LeetCode" className="company-detail__section">
             {questionsLoading ? (
               <LoadingSpinner />
+            ) : questions.length === 0 ? (
+              <p className="company-detail__tab-empty">No LeetCode question data for this company yet.</p>
             ) : (
-              <TopicProfile
-                companyName={company.name}
-                questions={questions}
-                expanded={topicExpanded}
-                onToggleExpanded={() => setTopicExpanded((v) => !v)}
-              />
+              <CompanyQuestions questions={questions} solvedSlugs={solvedSlugs} />
             )}
           </Card>
         )}
-      </div>
 
-      <div
-        className={`company-detail__row ${
-          !questionsLoading && questions.length === 0 ? "company-detail__row--single" : ""
-        }`}
-      >
-        {(questionsLoading || questions.length > 0) && (
+        {activeDetailTab === "topic" && (
           <Card
-            title={questionsLoading ? "Company questions" : undefined}
-            className={`company-detail__section company-detail__split-card ${
-              mediaRowExpanded === "media" ? "company-detail__split-card--collapsed" : ""
-            }`}
+            title={questionsLoading || questions.length === 0 ? "Topic Chart" : undefined}
+            className="company-detail__section"
           >
             {questionsLoading ? (
               <LoadingSpinner />
-            ) : mediaRowExpanded === "media" ? (
-              <button
-                type="button"
-                className="collapse-strip"
-                onClick={() => setMediaRowExpanded(null)}
-                aria-label="Show company questions"
-                aria-expanded={false}
-              >
-                <span className="collapse-strip__label">Company questions</span>
-              </button>
+            ) : questions.length === 0 ? (
+              <p className="company-detail__tab-empty">No topic data for this company yet.</p>
             ) : (
-              <CompanyQuestions
-                questions={questions}
-                solvedSlugs={solvedSlugs}
-                expanded={mediaRowExpanded === "questions"}
-                onToggleExpanded={() => setMediaRowExpanded((v) => (v === "questions" ? null : "questions"))}
-              />
+              <TopicProfile companyName={company.name} questions={questions} />
             )}
           </Card>
         )}
 
-        <Card
-          className={`company-detail__section company-detail__split-card ${
-            mediaRowExpanded === "questions" ? "company-detail__split-card--collapsed" : ""
-          }`}
-        >
-          {mediaRowExpanded === "questions" ? (
-            <button
-              type="button"
-              className="collapse-strip"
-              onClick={() => setMediaRowExpanded(null)}
-              aria-label="Show media tracking"
-              aria-expanded={false}
-            >
-              <span className="collapse-strip__label">Media tracking</span>
-            </button>
-          ) : (
-            <MediaTracking
-              companyName={company.name}
-              expanded={mediaRowExpanded === "media"}
-              onToggleExpanded={() => setMediaRowExpanded((v) => (v === "media" ? null : "media"))}
-            />
-          )}
-        </Card>
+        {activeDetailTab === "media" && (
+          <Card className="company-detail__section">
+            <MediaTracking companyName={company.name} />
+          </Card>
+        )}
       </div>
 
       <Card title="Application materials" className="company-detail__section">

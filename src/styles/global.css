@@ -442,10 +442,8 @@ button:disabled {
 }
 
 /* Stretches the card's content block (everything after the title) to fill
-   any extra height the grid gave the card — e.g. company-detail__row makes
-   Details and Company questions the same height, and this is what lets
-   Company questions' list actually grow into that space instead of leaving
-   it blank. */
+   any extra height the card was given, so lists/charts can grow into that
+   space instead of leaving it blank. */
 .card > *:last-child {
   flex: 1;
   min-height: 0;
@@ -666,95 +664,36 @@ button:disabled {
   display: flex;
 }
 
-.company-detail__row {
+/* Only the active tab's content is allowed to grow tall enough to make
+   .company-detail scroll — every other direct child (header, status row,
+   tracker, tab bar, materials card) must keep its natural height instead of
+   getting crushed by flexbox's shrink-to-fit when that content overflows. */
+.company-detail > *:not(.company-detail__tab-panel) {
+  flex-shrink: 0;
+}
+
+.company-detail__tabs {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  margin: 0 0 -1px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.company-detail__tab-panel {
   display: flex;
-  align-items: stretch;
-  gap: 18px;
 }
 
-/* flex-basis (not display:grid's grid-template-columns) so the Details /
-   Topic profile split animates smoothly — grid-template-columns transitions
-   aren't reliably supported, flex-basis transitions are. */
-.company-detail__details-slot {
-  flex: 1 1 50%;
-  min-width: 0;
-  /* Own flex context so the Details <Card> inside actually stretches to
-     match this slot's stretched height — a plain block child wouldn't fill
-     a taller parent, it'd just sit at its own content height. */
-  display: flex;
-  flex-direction: column;
-  transition: flex-basis 0.3s ease;
-}
-
-.company-detail__details-slot > .card {
-  /* flex-direction: column's align-items:stretch only stretches the CROSS
-     axis (width) — height (the main axis) needs an explicit flex-grow to
-     actually fill the stretched slot instead of sitting at content height. */
-  flex: 1;
-  min-height: 0;
-}
-
-.company-detail__row--single .company-detail__details-slot {
+.company-detail__tab-panel > .card {
   flex: 1 1 auto;
-}
-
-.company-detail__details-slot--collapsed {
-  flex: 0 0 64px;
-}
-
-.company-detail__topic-slot {
-  flex: 1 1 50%;
   min-width: 0;
-  min-height: 0;
 }
 
-/* Generic symmetric split-card pair (either side can be the expanded one) —
-   used for the Company questions / Media tracking row. Unlike the Details /
-   Topic profile row above, both sides here are full Cards that can become
-   the collapsed strip, so no extra wrapper div is needed: the Card itself is
-   the direct flex child of .company-detail__row and squishes/stretches
-   directly via flex-basis. */
-.company-detail__split-card {
-  flex: 1 1 50%;
-  min-width: 0;
-  min-height: 0;
-  transition: flex-basis 0.3s ease;
-}
-
-.company-detail__split-card--collapsed {
-  flex: 0 0 64px;
-}
-
-.company-detail__row--single .company-detail__split-card,
-.company-detail__row--single .company-detail__split-card--collapsed {
-  flex: 1 1 auto;
-}
-
-.collapse-strip {
-  width: 100%;
-  height: 100%;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+.company-detail__tab-empty {
   color: var(--text-dim);
-}
-
-.collapse-strip:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.collapse-strip__label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 14px;
 }
 
 /* ---------- Pipeline tracker (signature element) ---------- */
@@ -981,23 +920,8 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .company-detail__row {
+  .company-detail__tab-panel {
     flex-direction: column;
-  }
-
-  .company-detail__details-slot--collapsed,
-  .company-detail__split-card--collapsed {
-    flex-basis: auto;
-  }
-
-  .collapse-strip {
-    min-height: 0;
-    padding: 10px;
-  }
-
-  .collapse-strip__label {
-    writing-mode: horizontal-tb;
-    transform: none;
   }
 }
 
@@ -1073,7 +997,9 @@ button:disabled {
   }
 
   .topic-profile__radar {
-    align-self: center;
+    align-self: stretch;
+    width: 100%;
+    height: clamp(280px, 80vw, 400px);
   }
 
   .tracker__track {
@@ -2155,8 +2081,6 @@ a.jobs-board__company:hover {
   gap: 16px;
 }
 
-/* Shared title-row + expand/collapse toggle pattern — also reused as-is by
-   CompanyQuestions and MediaTracking, not just Topic profile. */
 .topic-profile__title-row {
   display: flex;
   align-items: center;
@@ -2168,46 +2092,9 @@ a.jobs-board__company:hover {
   margin: 0;
 }
 
-.topic-profile__toggle {
-  flex-shrink: 0;
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.topic-profile__toggle:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* Reveal animation: a single-row grid whose row track animates 0fr -> 1fr,
-   with the inner wrapper's overflow hidden so content height is clipped
-   during the transition. Avoids needing JS height measurement, and works
-   for arbitrary/variable content (the bars list length varies per company). */
-.topic-profile__expand,
-.topic-profile__bars-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
-}
-
-.topic-profile__expand--open,
-.topic-profile__bars-wrap--open {
-  grid-template-rows: 1fr;
-}
-
-.topic-profile__expand-inner,
-.topic-profile__bars-inner {
-  overflow: hidden;
-  min-height: 0;
-}
-
 .topic-profile__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
@@ -2238,42 +2125,27 @@ a.jobs-board__company:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  justify-content: center;
   gap: 24px;
 }
 
+/* Explicit height (not aspect-ratio chasing an ancestor's height) so
+   Recharts' ResponsiveContainer — which measures its parent's actual
+   pixel box — always has something concrete to fill, at any viewport. */
 .topic-profile__radar {
-  flex-shrink: 0;
-  min-height: 0;
-  /* Height-driven (not a fixed width cap): fills whatever vertical room the
-     card actually has — which, now that Details truly stretches to match,
-     is however tall Details' own content naturally is — instead of leaving
-     dead space below a smaller fixed-size chart. */
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  aspect-ratio: 1 / 1;
+  flex: 1 1 380px;
+  min-width: 280px;
+  height: clamp(320px, 34vw, 460px);
 }
 
 .topic-profile__bars-wrap {
-  /* basis 280 + wrap: drops below the radar instead of forcing an overflow
-     once the row can't fit both at whatever width the card actually has.
-     Collapses to 0 (both flex-grow and flex-basis) when not expanded, so it
-     doesn't reserve empty width next to the radar. */
-  flex: 1 1 280px;
-  min-width: 0;
-  transition: grid-template-rows 0.3s ease, flex-grow 0.3s ease, flex-basis 0.3s ease;
-}
-
-.topic-profile__bars-wrap:not(.topic-profile__bars-wrap--open) {
-  flex-grow: 0;
-  flex-basis: 0;
+  flex: 1 1 320px;
+  min-width: 260px;
 }
 
 .topic-profile__bars {
   display: flex;
   flex-direction: column;
-  max-height: clamp(280px, 30vw, 400px);
+  max-height: clamp(320px, 34vw, 460px);
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

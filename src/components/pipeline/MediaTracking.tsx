@@ -3,8 +3,6 @@ import { getMockMediaPosts, type MediaSource } from "../../lib/mediaTracking";
 
 interface MediaTrackingProps {
   companyName: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
 }
 
 const SOURCE_LABEL: Record<MediaSource, string> = {
@@ -12,7 +10,7 @@ const SOURCE_LABEL: Record<MediaSource, string> = {
   discord: "Discord",
 };
 
-export function MediaTracking({ companyName, expanded, onToggleExpanded }: MediaTrackingProps) {
+export function MediaTracking({ companyName }: MediaTrackingProps) {
   const posts = useMemo(() => getMockMediaPosts(companyName), [companyName]);
 
   const counts = useMemo(() => {
@@ -23,14 +21,9 @@ export function MediaTracking({ companyName, expanded, onToggleExpanded }: Media
 
   return (
     <div className="media-tracking">
-      <div className="topic-profile__title-row">
-        <h3 className="card__title">
-          Media tracking <span className="tag media-tracking__preview-tag">Preview</span>
-        </h3>
-        <button type="button" className="topic-profile__toggle" onClick={onToggleExpanded} aria-expanded={expanded}>
-          {expanded ? "Collapse" : "Expand"}
-        </button>
-      </div>
+      <h3 className="card__title">
+        Media tracking <span className="tag media-tracking__preview-tag">Preview</span>
+      </h3>
 
       <p className="media-tracking__description">
         Mocked — scraped posts mentioning {companyName} from communities we monitor. Not wired to a live source yet.

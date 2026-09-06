@@ -4,8 +4,6 @@ import { TIME_WINDOWS, type CompanyQuestion, type QuestionDifficulty, type Quest
 interface CompanyQuestionsProps {
   questions: CompanyQuestion[];
   solvedSlugs: Set<string>;
-  expanded: boolean;
-  onToggleExpanded: () => void;
 }
 
 type SortBy = "frequency" | "name";
@@ -18,7 +16,7 @@ const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
   { value: "hard", label: "Hard" },
 ];
 
-export function CompanyQuestions({ questions, solvedSlugs, expanded, onToggleExpanded }: CompanyQuestionsProps) {
+export function CompanyQuestions({ questions, solvedSlugs }: CompanyQuestionsProps) {
   const [timeWindow, setTimeWindow] = useState<QuestionTimeWindow>("all_time");
   const [difficulty, setDifficulty] = useState<QuestionDifficulty | "all">("all");
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>("all");
@@ -43,13 +41,6 @@ export function CompanyQuestions({ questions, solvedSlugs, expanded, onToggleExp
 
   return (
     <div className="company-questions">
-      <div className="topic-profile__title-row">
-        <h3 className="card__title">Company questions</h3>
-        <button type="button" className="topic-profile__toggle" onClick={onToggleExpanded} aria-expanded={expanded}>
-          {expanded ? "Collapse" : "Expand"}
-        </button>
-      </div>
-
       <div className="company-questions__filters">
         <select
           className="stage-filter__select"
