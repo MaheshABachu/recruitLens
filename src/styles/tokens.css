@@ -3,8 +3,11 @@
  * (a focused, always-open tool most people leave running next to an IDE)
  * but every surface must hold up in light too.
  *
- * Signature accent: amber (#FF8A3D / #E8712B) — the "lens" focus ring color,
- * used sparingly for the active pipeline stage and priority marks.
+ * Warm neutral palette: cream/graphite in light, warm near-black/cream in
+ * dark (a tonal inverse, not a hue swap). --accent is the general UI brand
+ * color (buttons, links, focus, tabs); --stage-active is a separate muted
+ * clay tone reserved for the active-pipeline-stage badges/tracker glow so
+ * they stay distinct from generic UI chrome and from "Not Applied" gray.
  */
 
 :root {
@@ -15,65 +18,77 @@
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  --shadow-sm: 0 1px 2px rgba(10, 12, 18, 0.06);
-  --shadow-md: 0 8px 24px rgba(10, 12, 18, 0.12);
+  --shadow-sm: 0 1px 2px rgba(23, 20, 15, 0.06);
+  --shadow-md: 0 8px 24px rgba(23, 20, 15, 0.12);
 
-  --green: #1e9e70;
-  --red: #dc4c4c;
-  --cyan: #0e93a6;
+  --green: #2f8f5b;
+  --red: #c25450;
+  --cyan: #3e8fa0;
 
   /* Light palette (default) */
-  --bg: #f6f5f2;
+  --bg: #f2f0e6;
   --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f0efea;
-  --border: #e3e1da;
-  --border-strong: #cfccc2;
-  --text: #1b1d22;
-  --text-dim: #62656f;
-  --text-faint: #9497a0;
-  --accent: #e8712b;
-  --accent-strong: #c85e1f;
-  --accent-soft: rgba(232, 113, 43, 0.1);
-  --backdrop: rgba(20, 18, 14, 0.35);
+  --surface-2: #ece9dc;
+  --border: #e1ddd0;
+  --border-strong: #ccc7b5;
+  --text: #17181a;
+  --text-dim: #6b6b66;
+  --text-faint: #9c978a;
+  --accent: #1c1d1b;
+  --accent-strong: #000000;
+  --accent-soft: rgba(28, 29, 27, 0.07);
+  --accent-contrast: #ffffff;
+  --stage-active: #b5652f;
+  --stage-active-soft: rgba(181, 101, 47, 0.14);
+  --stage-active-strong: #8f4e22;
+  --backdrop: rgba(23, 20, 14, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b0e14;
-    --bg-elevated: #11151d;
-    --surface: #161b25;
-    --surface-2: #1d2330;
-    --border: #2a3140;
-    --border-strong: #3a4356;
-    --text: #e7e9ee;
-    --text-dim: #9aa3b5;
-    --text-faint: #5c6478;
-    --accent: #ff8a3d;
-    --accent-strong: #ff9e5c;
-    --accent-soft: rgba(255, 138, 61, 0.16);
-    --backdrop: rgba(4, 5, 8, 0.55);
-    --green: #34d399;
-    --red: #f87171;
-    --cyan: #4dd0e1;
+    --bg: #14120f;
+    --bg-elevated: #1b1815;
+    --surface: #201d18;
+    --surface-2: #2a251e;
+    --border: #3a342a;
+    --border-strong: #4c4436;
+    --text: #ede9e0;
+    --text-dim: #a8a093;
+    --text-faint: #6b6459;
+    --accent: #f2efe6;
+    --accent-strong: #ffffff;
+    --accent-soft: rgba(242, 239, 230, 0.12);
+    --accent-contrast: #17181a;
+    --stage-active: #e08a4e;
+    --stage-active-soft: rgba(224, 138, 78, 0.18);
+    --stage-active-strong: #f0a264;
+    --backdrop: rgba(10, 9, 6, 0.6);
+    --green: #4fae7d;
+    --red: #d97873;
+    --cyan: #6fb8c7;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b0e14;
-  --bg-elevated: #11151d;
-  --surface: #161b25;
-  --surface-2: #1d2330;
-  --border: #2a3140;
-  --border-strong: #3a4356;
-  --text: #e7e9ee;
-  --text-dim: #9aa3b5;
-  --text-faint: #5c6478;
-  --accent: #ff8a3d;
-  --accent-strong: #ff9e5c;
-  --accent-soft: rgba(255, 138, 61, 0.16);
-  --backdrop: rgba(4, 5, 8, 0.55);
-  --green: #34d399;
-  --red: #f87171;
-  --cyan: #4dd0e1;
+  --bg: #14120f;
+  --bg-elevated: #1b1815;
+  --surface: #201d18;
+  --surface-2: #2a251e;
+  --border: #3a342a;
+  --border-strong: #4c4436;
+  --text: #ede9e0;
+  --text-dim: #a8a093;
+  --text-faint: #6b6459;
+  --accent: #f2efe6;
+  --accent-strong: #ffffff;
+  --accent-soft: rgba(242, 239, 230, 0.12);
+  --accent-contrast: #17181a;
+  --stage-active: #e08a4e;
+  --stage-active-soft: rgba(224, 138, 78, 0.18);
+  --stage-active-strong: #f0a264;
+  --backdrop: rgba(10, 9, 6, 0.6);
+  --green: #4fae7d;
+  --red: #d97873;
+  --cyan: #6fb8c7;
 }

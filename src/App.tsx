@@ -11,6 +11,7 @@ import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useEmailAgent } from "./hooks/useEmailAgent";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
+import type { PipelineStatus } from "./types/pipeline";
 
 type Tab = "Pipeline" | "Jobs";
 const TABS: Tab[] = ["Pipeline", "Jobs"];
@@ -33,10 +34,16 @@ export default function App() {
     selectRole,
     togglePriority,
     addCompany,
+    addRole,
     updateRoleField,
     deleteCompany,
     appendRoleNote,
   } = usePipelineStore(userId);
+
+  function handleAddCompany(input: { name: string; role: string; status: PipelineStatus }) {
+    const newCompany = addCompany(input);
+    selectCompany(newCompany.id);
+  }
 
   const {
     isAuthenticated: isEmailConnected,
@@ -112,6 +119,7 @@ export default function App() {
             companies={companies}
             activeCompanyId={activeCompany?.id ?? null}
             onSelectCompany={selectCompany}
+            onAddCompany={handleAddCompany}
             isDrawerOpen={isDrawerOpen}
             onCloseDrawer={() => setIsDrawerOpen(false)}
           />
@@ -122,6 +130,7 @@ export default function App() {
             onSelectRole={selectRole}
             onTogglePriority={togglePriority}
             onUpdateRoleField={updateRoleField}
+            onAddRole={addRole}
             onDeleteCompany={deleteCompany}
           />
         </div>

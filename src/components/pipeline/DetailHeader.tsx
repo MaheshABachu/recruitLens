@@ -6,6 +6,7 @@ interface DetailHeaderProps {
   activeRoleIndex: number;
   onSelectRole: (index: number) => void;
   onTogglePriority: () => void;
+  onAddRole: () => void;
   onDelete: () => void;
 }
 
@@ -14,6 +15,7 @@ export function DetailHeader({
   activeRoleIndex,
   onSelectRole,
   onTogglePriority,
+  onAddRole,
   onDelete,
 }: DetailHeaderProps) {
   return (
@@ -25,6 +27,9 @@ export function DetailHeader({
         {company.roles.length > 1 && (
           <RoleSelect roles={company.roles} activeIndex={activeRoleIndex} onChange={onSelectRole} />
         )}
+        <button type="button" className="add-role-button" onClick={onAddRole}>
+          <span aria-hidden="true">+</span> Add role
+        </button>
         <button
           type="button"
           className={`priority-button ${company.priority ? "priority-button--active" : ""}`}

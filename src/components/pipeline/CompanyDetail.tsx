@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Company, Role } from "../../types/pipeline";
+import type { Company, PipelineStatus, Role } from "../../types/pipeline";
 import { Card } from "../shared/Card";
 import { StatusBadge } from "../shared/StatusBadge";
 import { DetailHeader } from "./DetailHeader";
@@ -9,6 +9,7 @@ import { MaterialsSection } from "./MaterialsSection";
 import { CompanyQuestions } from "./CompanyQuestions";
 import { TopicProfile } from "./TopicProfile";
 import { MediaTracking } from "./MediaTracking";
+import { AddRoleModal } from "./AddRoleModal";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
 import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
@@ -20,6 +21,7 @@ interface CompanyDetailProps {
   onSelectRole: (index: number) => void;
   onTogglePriority: (companyId: string) => void;
   onUpdateRoleField: <K extends keyof Role>(companyId: string, roleIndex: number, field: K, value: Role[K]) => void;
+  onAddRole: (companyId: string, input: { role: string; status: PipelineStatus }) => void;
   onDeleteCompany: (companyId: string) => void;
 }
 
@@ -30,16 +32,19 @@ export function CompanyDetail({
   onSelectRole,
   onTogglePriority,
   onUpdateRoleField,
+  onAddRole,
   onDeleteCompany,
 }: CompanyDetailProps) {
   const { questions, loading: questionsLoading } = useCompanyQuestions(company?.name);
   const solvedSlugs = useLeetCodeSolvedSlugs();
   const [topicExpanded, setTopicExpanded] = useState(false);
   const [mediaRowExpanded, setMediaRowExpanded] = useState<"questions" | "media" | null>(null);
+  const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
 
   useEffect(() => {
     setTopicExpanded(false);
     setMediaRowExpanded(null);
+    setIsAddRoleOpen(false);
   }, [company?.id]);
 
   if (!company || !activeRole) {
@@ -57,8 +62,17 @@ export function CompanyDetail({
         activeRoleIndex={activeRoleIndex}
         onSelectRole={onSelectRole}
         onTogglePriority={() => onTogglePriority(company.id)}
+        onAddRole={() => setIsAddRoleOpen(true)}
         onDelete={() => onDeleteCompany(company.id)}
       />
+
+      {isAddRoleOpen && (
+        <AddRoleModal
+          companyName={company.name}
+          onClose={() => setIsAddRoleOpen(false)}
+          onSubmit={(input) => onAddRole(company.id, input)}
+        />
+      )}
 
       <div className="company-detail__status-row">
         <StatusBadge status={activeRole.status} />

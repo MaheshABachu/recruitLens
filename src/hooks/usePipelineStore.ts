@@ -184,20 +184,22 @@ export function usePipelineStore(userId: string | null) {
     }
   }
 
-  // Adds a company discovered via an external source (e.g. the email agent)
-  // with a single starter role. IDs are generated client-side so the new
-  // company is usable synchronously — the Supabase insert happens after,
-  // in the background, using those same IDs.
-  function addCompany(input: { name: string; status: Role["status"] }): Company {
+  // Adds a company — either discovered via an external source (e.g. the
+  // email agent) or entered manually — with a single starter role. IDs are
+  // generated client-side so the new company is usable synchronously — the
+  // Supabase insert happens after, in the background, using those same IDs.
+  function addCompany(input: { name: string; status: Role["status"]; role?: string; group?: string }): Company {
     const companyId = crypto.randomUUID();
     const roleId = crypto.randomUUID();
+    const role = input.role ?? "Application";
+    const group = input.group ?? "OTHER";
     const newCompany: Company = {
       id: companyId,
       name: input.name,
-      group: "OTHER",
+      group,
       problems: 0,
       priority: false,
-      roles: [{ id: roleId, role: "Application", status: input.status }],
+      roles: [{ id: roleId, role, status: input.status }],
     };
     setCompanies((prev) => [...prev, newCompany]);
 
@@ -206,13 +208,32 @@ export function usePipelineStore(userId: string | null) {
     enqueueWrite("addCompany", () =>
       supabase
         .from("companies")
-        .insert({ id: companyId, name: input.name, category: "OTHER", problems: 0, priority: false, user_id: userId }),
+        .insert({ id: companyId, name: input.name, category: group, problems: 0, priority: false, user_id: userId }),
     );
     enqueueWrite("addCompany (role)", () =>
-      supabase.from("roles").insert({ id: roleId, company_id: companyId, role: "Application", status: input.status }),
+      supabase.from("roles").insert({ id: roleId, company_id: companyId, role, status: input.status }),
     );
 
     return newCompany;
+  }
+
+  // Adds an additional role to an existing company (e.g. a second posting at
+  // the same employer) and switches the active role to it when that company
+  // is the one currently selected.
+  function addRole(companyId: string, input: { role: string; status: PipelineStatus }) {
+    const company = companies.find((c) => c.id === companyId);
+    if (!company) return;
+    const roleId = crypto.randomUUID();
+    const newRole: Role = { id: roleId, role: input.role, status: input.status };
+
+    setCompanies((prev) =>
+      prev.map((c) => (c.id === companyId ? { ...c, roles: [...c.roles, newRole] } : c)),
+    );
+    if (companyId === activeCompanyId) setActiveRoleIndex(company.roles.length);
+
+    enqueueWrite("addRole", () =>
+      supabase.from("roles").insert({ id: roleId, company_id: companyId, role: input.role, status: input.status }),
+    );
   }
 
   function deleteCompany(companyId: string) {
@@ -253,6 +274,7 @@ export function usePipelineStore(userId: string | null) {
     togglePriority,
     updateRoleField,
     addCompany,
+    addRole,
     deleteCompany,
     appendRoleNote,
   };

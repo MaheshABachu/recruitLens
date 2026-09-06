@@ -396,8 +396,8 @@ button:disabled {
 }
 
 .status-badge--active {
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--stage-active);
+  background: var(--stage-active-soft);
 }
 
 .status-badge--offer {
@@ -537,6 +537,118 @@ button:disabled {
   background: color-mix(in srgb, var(--red) 10%, transparent);
 }
 
+.add-role-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.add-role-button:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+/* ---------- Modal (Add company / Add role) ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--backdrop);
+}
+
+.modal {
+  width: min(420px, 100%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.modal__close {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+}
+
+.modal__close:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.modal__cancel {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.modal__cancel:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.modal__submit {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modal__submit:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.modal__submit:disabled {
+  opacity: 0.5;
+}
+
 .company-detail__status-row {
   display: flex;
 }
@@ -667,7 +779,7 @@ button:disabled {
 }
 
 .tracker__stage--done::before {
-  background: var(--accent);
+  background: var(--stage-active);
 }
 
 .tracker__node {
@@ -681,24 +793,24 @@ button:disabled {
 }
 
 .tracker__stage--done .tracker__node {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--stage-active);
+  border-color: var(--stage-active);
 }
 
 .tracker__stage--current .tracker__node {
   background: var(--bg-elevated);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft);
+  border-color: var(--stage-active);
+  box-shadow: 0 0 0 4px var(--stage-active-soft);
   animation: tracker-pulse 2.2s ease-in-out infinite;
 }
 
 @keyframes tracker-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 4px var(--accent-soft);
+    box-shadow: 0 0 0 4px var(--stage-active-soft);
   }
   50% {
-    box-shadow: 0 0 0 7px var(--accent-soft);
+    box-shadow: 0 0 0 7px var(--stage-active-soft);
   }
 }
 
@@ -1127,7 +1239,7 @@ button:disabled {
   padding: 8px 14px;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -1343,7 +1455,7 @@ button:disabled {
 
 .suggestion-review__approve {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
 }
 
 .suggestion-review__approve:hover {
@@ -1638,7 +1750,7 @@ button:disabled {
   padding: 8px 14px;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;

@@ -4,11 +4,13 @@ import { furthestStatus } from "../../lib/pipelineUtils";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyRow } from "./CompanyRow";
 import { StageFilterBar, type SortOption } from "./StageFilterBar";
+import { AddCompanyModal } from "./AddCompanyModal";
 
 interface SidebarProps {
   companies: Company[];
   activeCompanyId: string | null;
   onSelectCompany: (id: string) => void;
+  onAddCompany: (input: { name: string; role: string; status: PipelineStatus }) => void;
   isDrawerOpen: boolean;
   onCloseDrawer: () => void;
 }
@@ -27,12 +29,14 @@ export function Sidebar({
   companies,
   activeCompanyId,
   onSelectCompany,
+  onAddCompany,
   isDrawerOpen,
   onCloseDrawer,
 }: SidebarProps) {
   const [searchText, setSearchText] = useState("");
   const [stageFilter, setStageFilter] = useState<PipelineStatus | "All">("All");
   const [sortBy, setSortBy] = useState<SortOption>("stage");
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
 
   const searched = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -77,10 +81,14 @@ export function Sidebar({
       <aside className={`sidebar ${isDrawerOpen ? "sidebar--open" : ""}`}>
         <div className="sidebar__search">
           <CompanySearch value={searchText} onChange={setSearchText} />
-          <button type="button" className="add-company-button">
+          <button type="button" className="add-company-button" onClick={() => setIsAddCompanyOpen(true)}>
             <span aria-hidden="true">+</span> Add company
           </button>
         </div>
+
+        {isAddCompanyOpen && (
+          <AddCompanyModal onClose={() => setIsAddCompanyOpen(false)} onSubmit={onAddCompany} />
+        )}
 
         <StageFilterBar
           counts={stageCounts}
