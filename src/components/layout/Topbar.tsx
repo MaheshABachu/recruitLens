@@ -58,9 +58,12 @@ export function Topbar({
         <SettingsButton onClick={onOpenSettings} />
         <ThemeToggle />
         {userEmail && (
-          <button type="button" className="account-btn" onClick={onSignOut} title={userEmail}>
-            {userEmail[0]?.toUpperCase()}
-          </button>
+          <>
+            <span className="topbar__divider" aria-hidden="true" />
+            <button type="button" className="account-btn" onClick={onSignOut} title={userEmail}>
+              {userEmail[0]?.toUpperCase()}
+            </button>
+          </>
         )}
       </div>
     </header>
