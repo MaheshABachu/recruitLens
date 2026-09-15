@@ -9,7 +9,7 @@ import { useLcCompanies } from "../../hooks/useLcCompanies";
 import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
 import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
 import { computeTopicScores } from "../../lib/topicProfile";
-import { TIME_WINDOWS, type CompanyQuestion, type QuestionDifficulty, type QuestionTimeWindow } from "../../lib/companyQuestions";
+import type { CompanyQuestion, QuestionDifficulty, QuestionTimeWindow } from "../../lib/companyQuestions";
 
 const EMPTY_TALLY: Record<QuestionDifficulty, DifficultyTally> = {
   easy: { solved: 0, total: 0 },
@@ -72,18 +72,6 @@ export function CompaniesBoard() {
 
         <div className="companies-board__controls">
           <CompanyPicker companies={companies} selected={selected} onSelect={setSelected} />
-          <select
-            className="stage-filter__select companies-board__window"
-            value={timeWindow}
-            onChange={(e) => setTimeWindow(e.target.value as QuestionTimeWindow)}
-            aria-label="Filter by time window"
-          >
-            {TIME_WINDOWS.map((w) => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -118,7 +106,12 @@ export function CompaniesBoard() {
           </div>
 
           <Card title="All questions" className="companies-board__card companies-board__questions">
-            <CompanyQuestions questions={questions} solvedSlugs={solvedSlugs} timeWindow={timeWindow} />
+            <CompanyQuestions
+              questions={questions}
+              solvedSlugs={solvedSlugs}
+              timeWindow={timeWindow}
+              onTimeWindowChange={setTimeWindow}
+            />
           </Card>
         </div>
       )}

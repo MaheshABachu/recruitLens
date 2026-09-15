@@ -2459,11 +2459,6 @@ a.jobs-board__company:hover {
   gap: 8px;
 }
 
-.companies-board__window {
-  width: auto;
-  flex-shrink: 0;
-}
-
 .companies-board__empty {
   margin: 0;
   max-width: 52ch;

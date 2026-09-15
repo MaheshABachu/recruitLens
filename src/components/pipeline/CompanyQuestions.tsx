@@ -5,11 +5,13 @@ interface CompanyQuestionsProps {
   questions: CompanyQuestion[];
   solvedSlugs: Set<string>;
   /**
-   * Controlled time window. When passed, the built-in window <select> is
-   * hidden and the caller owns the choice — the Companies tab drives this
-   * list and its topic chart from one shared control.
+   * Controlled time window + its setter. When both are passed, the window
+   * <select> still renders in this filter row but writes through the
+   * callback instead of local state — the Companies tab uses this so the
+   * same control also drives the progress ring and topic chart.
    */
   timeWindow?: QuestionTimeWindow;
+  onTimeWindowChange?: (window: QuestionTimeWindow) => void;
 }
 
 type SortBy = "frequency" | "name";
@@ -22,9 +24,15 @@ const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
   { value: "hard", label: "Hard" },
 ];
 
-export function CompanyQuestions({ questions, solvedSlugs, timeWindow: controlledWindow }: CompanyQuestionsProps) {
+export function CompanyQuestions({
+  questions,
+  solvedSlugs,
+  timeWindow: controlledWindow,
+  onTimeWindowChange,
+}: CompanyQuestionsProps) {
   const [ownWindow, setOwnWindow] = useState<QuestionTimeWindow>("all_time");
   const timeWindow = controlledWindow ?? ownWindow;
+  const setTimeWindow = onTimeWindowChange ?? setOwnWindow;
   const [difficulty, setDifficulty] = useState<QuestionDifficulty | "all">("all");
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("frequency");
@@ -49,20 +57,18 @@ export function CompanyQuestions({ questions, solvedSlugs, timeWindow: controlle
   return (
     <div className="company-questions">
       <div className="company-questions__filters">
-        {controlledWindow === undefined && (
-          <select
-            className="stage-filter__select"
-            value={timeWindow}
-            onChange={(e) => setOwnWindow(e.target.value as QuestionTimeWindow)}
-            aria-label="Filter by time window"
-          >
-            {TIME_WINDOWS.map((w) => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          className="stage-filter__select"
+          value={timeWindow}
+          onChange={(e) => setTimeWindow(e.target.value as QuestionTimeWindow)}
+          aria-label="Filter by time window"
+        >
+          {TIME_WINDOWS.map((w) => (
+            <option key={w.value} value={w.value}>
+              {w.label}
+            </option>
+          ))}
+        </select>
 
         <select
           className="stage-filter__select"
