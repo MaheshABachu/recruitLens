@@ -4,6 +4,7 @@ import { Sidebar } from "./components/pipeline/Sidebar";
 import { CompanyDetail } from "./components/pipeline/CompanyDetail";
 import { EmailAgentPanel } from "./components/email/EmailAgentPanel";
 import { JobsBoard } from "./components/jobs/JobsBoard";
+import { CompaniesBoard } from "./components/companies/CompaniesBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { usePipelineStore } from "./hooks/usePipelineStore";
@@ -13,8 +14,8 @@ import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
 import type { PipelineStatus } from "./types/pipeline";
 
-type Tab = "Pipeline" | "Jobs";
-const TABS: Tab[] = ["Pipeline", "Jobs"];
+type Tab = "Pipeline" | "Companies" | "Jobs";
+const TABS: Tab[] = ["Pipeline", "Companies", "Jobs"];
 
 export default function App() {
   const { session, loading: authLoading, signOut } = useAuth();
@@ -113,7 +114,7 @@ export default function App() {
         })}
       </nav>
 
-      {activeTab === "Pipeline" ? (
+      {activeTab === "Pipeline" && (
         <div className="app__body">
           <Sidebar
             companies={companies}
@@ -134,9 +135,11 @@ export default function App() {
             onDeleteCompany={deleteCompany}
           />
         </div>
-      ) : (
-        <JobsBoard />
       )}
+
+      {activeTab === "Companies" && <CompaniesBoard />}
+
+      {activeTab === "Jobs" && <JobsBoard />}
 
       {isEmailPanelOpen && (
         <EmailAgentPanel

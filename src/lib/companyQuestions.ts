@@ -98,3 +98,20 @@ export async function getCompanyQuestions(companyName: string): Promise<CompanyQ
     topics: row.lc_questions.lc_question_topics.map((qt) => qt.lc_topics?.name).filter((name): name is string => !!name),
   }));
 }
+
+// Every company the question bank covers (~470), for the Companies tab's
+// lookup. Read straight from lc_companies rather than derived from the
+// pipeline's own `companies` table — this is the shared/global reference set,
+// not the user's tracked companies, and the two only overlap by name.
+export async function getLcCompanyNames(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("lc_companies")
+    .select("name")
+    .order("name")
+    .returns<{ name: string }[]>();
+  if (error) {
+    console.error("Failed to load company list:", error);
+    return [];
+  }
+  return (data ?? []).map((row) => row.name);
+}

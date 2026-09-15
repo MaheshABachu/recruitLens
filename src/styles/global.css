@@ -2412,3 +2412,305 @@ a.jobs-board__company:hover {
   background: var(--surface-2);
   border-color: var(--text-faint);
 }
+
+/* ---------- Companies tab (question-bank lookup) ---------- */
+.companies-board {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  padding: 20px 24px 28px;
+  overflow-y: auto;
+}
+
+.companies-board__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.companies-board__heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.companies-board__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.companies-board__count {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.companies-board__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.companies-board__window {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.companies-board__empty {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* [progress + spider + bars] | [all questions] — the questions column runs
+   the full height of the grid row so the list reads as one long table. */
+.companies-board__grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.05fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.companies-board__left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+}
+
+.companies-board__card {
+  min-width: 0;
+}
+
+.companies-board__questions {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The pipeline card caps its list at 360px; here the list is the column, so
+   it stretches instead. */
+.companies-board__questions .company-questions {
+  flex: 1;
+  min-height: 0;
+}
+
+.companies-board__questions .company-questions__list {
+  max-height: clamp(420px, 68vh, 900px);
+}
+
+@media (max-width: 1080px) {
+  .companies-board__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .companies-board {
+    padding: 16px 12px 24px;
+  }
+}
+
+/* ---------- Company picker (combobox over the ~470-company bank) ---------- */
+.company-picker {
+  position: relative;
+  min-width: 240px;
+}
+
+.company-picker__field {
+  width: 100%;
+}
+
+.company-picker__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+.company-picker__option {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.company-picker__option:hover,
+.company-picker__option:focus-visible {
+  background: var(--surface-2);
+}
+
+.company-picker__option--active {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.company-picker__empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ---------- Progress dial (solved vs. the company's question set) ---------- */
+.progress-ring {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.progress-ring__dial {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.progress-ring__svg {
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+}
+
+.progress-ring__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.progress-ring__count {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+}
+
+.progress-ring__total {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.progress-ring__caption {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.progress-ring__footnote {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.progress-ring__tiles {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.progress-ring__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 78px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.progress-ring__tile-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.progress-ring__tile-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.progress-ring__tile--easy .progress-ring__tile-label {
+  color: var(--green);
+}
+
+.progress-ring__tile--medium .progress-ring__tile-label {
+  color: var(--stage-active);
+}
+
+.progress-ring__tile--hard .progress-ring__tile-label {
+  color: var(--red);
+}
+
+/* Stacked variant of the topic chart — radar over bars, used by the
+   Companies tab's narrow left column (the pipeline card keeps them side by side). */
+.topic-profile__body--column {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 16px;
+}
+
+.topic-profile__body--column .topic-profile__radar {
+  flex: 0 0 auto;
+  width: 100%;
+  height: clamp(280px, 26vw, 380px);
+}
+
+.topic-profile__body--column .topic-profile__bars-wrap {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.topic-profile__body--column .topic-profile__bars {
+  max-height: 260px;
+}
