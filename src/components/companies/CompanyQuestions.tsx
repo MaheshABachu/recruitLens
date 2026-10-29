@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { TIME_WINDOWS, type CompanyQuestion, type QuestionDifficulty, type QuestionTimeWindow } from "../../lib/companyQuestions";
+import { TopicSearch } from "./TopicSearch";
 
 interface CompanyQuestionsProps {
   questions: CompanyQuestion[];
@@ -34,8 +35,19 @@ export function CompanyQuestions({
   const timeWindow = controlledWindow ?? ownWindow;
   const setTimeWindow = onTimeWindowChange ?? setOwnWindow;
   const [difficulty, setDifficulty] = useState<QuestionDifficulty | "all">("all");
+  const [selectedTopic, setTopic] = useState<string>("all");
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("frequency");
+
+  // Topic options come from the loaded company's own questions (across all
+  // windows, so the list doesn't shift as the window changes).
+  const topics = useMemo(
+    () => [...new Set(questions.flatMap((q) => q.topics))].sort((a, b) => a.localeCompare(b)),
+    [questions],
+  );
+  // Switching companies can leave a topic selected that the new company
+  // doesn't have — fall back to "all" rather than showing an empty list.
+  const topic = topics.includes(selectedTopic) ? selectedTopic : "all";
 
   const rows = useMemo(() => {
     // Each problem has one row per time_window (same slug, different
@@ -44,6 +56,7 @@ export function CompanyQuestions({
     const filtered = questions.filter((q) => {
       if (q.time_window !== timeWindow) return false;
       if (difficulty !== "all" && q.difficulty !== difficulty) return false;
+      if (topic !== "all" && !q.topics.includes(topic)) return false;
       const isSolved = solvedSlugs.has(q.problem_slug);
       if (solvedFilter === "solved" && !isSolved) return false;
       if (solvedFilter === "unsolved" && isSolved) return false;
@@ -52,10 +65,12 @@ export function CompanyQuestions({
     return filtered.sort((a, b) =>
       sortBy === "frequency" ? b.frequency_score - a.frequency_score : a.problem_name.localeCompare(b.problem_name),
     );
-  }, [questions, timeWindow, difficulty, solvedFilter, sortBy, solvedSlugs]);
+  }, [questions, timeWindow, difficulty, topic, solvedFilter, sortBy, solvedSlugs]);
 
   return (
     <div className="company-questions">
+      <TopicSearch topics={topics} selected={topic} onSelect={setTopic} />
+
       <div className="company-questions__filters">
         <select
           className="stage-filter__select"

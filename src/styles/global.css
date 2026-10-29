@@ -1285,6 +1285,29 @@ a.jobs-board__company:hover {
   font-weight: 600;
 }
 
+.topic-search .company-search__input {
+  padding-right: 32px;
+}
+
+.topic-search__clear {
+  position: absolute;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.topic-search__clear:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
 .company-picker__empty {
   padding: 8px 10px;
   font-size: 12px;
