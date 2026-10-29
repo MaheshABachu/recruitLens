@@ -1,42 +1,16 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { SettingsButton } from "./SettingsButton";
-import { EmailAgentButton } from "../email/EmailAgentButton";
 
 interface TopbarProps {
-  isDrawerOpen: boolean;
-  onToggleDrawer: () => void;
-  isEmailConnected: boolean;
-  isEmailSyncing: boolean;
-  onOpenEmailAgent: () => void;
   onOpenSettings: () => void;
   userEmail?: string | null;
   onSignOut: () => void;
 }
 
-export function Topbar({
-  isDrawerOpen,
-  onToggleDrawer,
-  isEmailConnected,
-  isEmailSyncing,
-  onOpenEmailAgent,
-  onOpenSettings,
-  userEmail,
-  onSignOut,
-}: TopbarProps) {
+export function Topbar({ onOpenSettings, userEmail, onSignOut }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar__left">
-        <button
-          type="button"
-          className="hamburger"
-          onClick={onToggleDrawer}
-          aria-label={isDrawerOpen ? "Close company list" : "Open company list"}
-          aria-expanded={isDrawerOpen}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
         <div className="logo">
           <span className="logo__mark" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -50,11 +24,6 @@ export function Topbar({
         </div>
       </div>
       <div className="topbar__right">
-        <EmailAgentButton
-          isConnected={isEmailConnected}
-          isSyncing={isEmailSyncing}
-          onClick={onOpenEmailAgent}
-        />
         <SettingsButton onClick={onOpenSettings} />
         <ThemeToggle />
         {userEmail && (

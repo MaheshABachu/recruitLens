@@ -13,7 +13,7 @@ export interface CompanyQuestion {
   topics: string[];
 }
 
-// Shared across CompanyQuestions and TopicProfile's time-window <select>s —
+// Shared by the Companies tab's time-window <select> —
 // ordered newest-window-first, matches the descending-recency reading order
 // used throughout the Company questions filter.
 export const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
@@ -76,9 +76,7 @@ async function fetchAllCompanyQuestionRows(companyName: string): Promise<RawComp
 // github.com/liquidslr/leetcode-company-wise-problems and imported via
 // scripts/import-company-questions.ts — not managed by this app at runtime.
 // Matches on company name only, case-insensitively and without wildcards, so
-// it's an exact match on name, not a fuzzy one — most pipeline companies
-// simply have no rows here, which is expected (the source only covers a
-// curated set of ~470 companies).
+// it's an exact match on name, not a fuzzy one.
 export async function getCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
   let data: RawCompanyQuestionRow[];
   try {
@@ -100,9 +98,7 @@ export async function getCompanyQuestions(companyName: string): Promise<CompanyQ
 }
 
 // Every company the question bank covers (~470), for the Companies tab's
-// lookup. Read straight from lc_companies rather than derived from the
-// pipeline's own `companies` table — this is the shared/global reference set,
-// not the user's tracked companies, and the two only overlap by name.
+// lookup. Read straight from lc_companies — the shared/global reference set.
 export async function getLcCompanyNames(): Promise<string[]> {
   const { data, error } = await supabase
     .from("lc_companies")

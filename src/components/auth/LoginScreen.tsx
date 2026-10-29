@@ -17,7 +17,7 @@ export function LoginScreen() {
             Van<span className="logo__accent">tage</span>
           </span>
         </div>
-        <p className="login-screen__subtitle">Sign in to track your pipeline.</p>
+        <p className="login-screen__subtitle">Sign in to start prepping.</p>
         <button type="button" className="login-screen__google-btn" onClick={signInWithGoogle}>
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path

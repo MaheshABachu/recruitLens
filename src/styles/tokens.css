@@ -5,9 +5,8 @@
  *
  * Warm neutral palette: cream/graphite in light, warm near-black/cream in
  * dark (a tonal inverse, not a hue swap). --accent is the general UI brand
- * color (buttons, links, focus, tabs); --stage-active is a separate muted
- * clay tone reserved for the active-pipeline-stage badges/tracker glow so
- * they stay distinct from generic UI chrome and from "Not Applied" gray.
+ * color (buttons, links, focus, tabs); --green / --amber / --red are the
+ * easy / medium / hard difficulty colors.
  */
 
 :root {
@@ -23,7 +22,6 @@
 
   --green: #2f8f5b;
   --red: #c25450;
-  --cyan: #3e8fa0;
 
   /* Light palette (default) */
   --bg: #f2f0e6;
@@ -39,9 +37,7 @@
   --accent-strong: #000000;
   --accent-soft: rgba(28, 29, 27, 0.07);
   --accent-contrast: #ffffff;
-  --stage-active: #b5652f;
-  --stage-active-soft: rgba(181, 101, 47, 0.14);
-  --stage-active-strong: #8f4e22;
+  --amber: #b5652f;
   --backdrop: rgba(23, 20, 14, 0.35);
 }
 
@@ -60,13 +56,10 @@
     --accent-strong: #ffffff;
     --accent-soft: rgba(242, 239, 230, 0.12);
     --accent-contrast: #17181a;
-    --stage-active: #e08a4e;
-    --stage-active-soft: rgba(224, 138, 78, 0.18);
-    --stage-active-strong: #f0a264;
+    --amber: #e08a4e;
     --backdrop: rgba(10, 9, 6, 0.6);
     --green: #4fae7d;
     --red: #d97873;
-    --cyan: #6fb8c7;
   }
 }
 
@@ -84,11 +77,8 @@
   --accent-strong: #ffffff;
   --accent-soft: rgba(242, 239, 230, 0.12);
   --accent-contrast: #17181a;
-  --stage-active: #e08a4e;
-  --stage-active-soft: rgba(224, 138, 78, 0.18);
-  --stage-active-strong: #f0a264;
+  --amber: #e08a4e;
   --backdrop: rgba(10, 9, 6, 0.6);
   --green: #4fae7d;
   --red: #d97873;
-  --cyan: #6fb8c7;
 }

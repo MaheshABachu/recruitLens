@@ -48,7 +48,7 @@ export function ProgressRing({ solved, total, byDifficulty }: ProgressRingProps)
               cy="70"
               r={RADIUS}
               fill="none"
-              stroke="var(--stage-active)"
+              stroke="var(--amber)"
               strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${ARC_LENGTH * ratio} ${CIRCUMFERENCE}`}

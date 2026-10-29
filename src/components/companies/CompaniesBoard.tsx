@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CompanyPicker } from "./CompanyPicker";
 import { ProgressRing, type DifficultyTally } from "./ProgressRing";
-import { CompanyQuestions } from "../pipeline/CompanyQuestions";
+import { CompanyQuestions } from "./CompanyQuestions";
 import { TopicChart } from "../shared/TopicChart";
 import { Card } from "../shared/Card";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
@@ -100,7 +100,7 @@ export function CompaniesBoard() {
               {scores.length === 0 ? (
                 <p className="topic-profile__empty">No topic data for this window.</p>
               ) : (
-                <TopicChart scores={scores} layout="column" />
+                <TopicChart scores={scores} />
               )}
             </Card>
           </div>
