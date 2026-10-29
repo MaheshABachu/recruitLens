@@ -3,7 +3,7 @@ import { Topbar } from "./components/layout/Topbar";
 import { JobsBoard } from "./components/jobs/JobsBoard";
 import { CompaniesBoard } from "./components/companies/CompaniesBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
-import { LoginScreen } from "./components/auth/LoginScreen";
+import { LandingPage } from "./components/landing/LandingPage";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
 
@@ -28,7 +28,7 @@ export default function App() {
   } = useLeetCodeSync(userId);
 
   if (authLoading) return null;
-  if (!session) return <LoginScreen />;
+  if (!session) return <LandingPage />;
 
   return (
     <div className="app">

@@ -1,0 +1,707 @@
+/* ---------- Landing page (signed-out visitors) ----------
+ * Shown by App.tsx in place of the app until a session exists. Uses only the
+ * shared tokens from tokens.css so light/dark both work. The receipt in the
+ * hero is the one loud element; everything else stays quiet.
+ */
+.landing {
+  --landing-max: 1120px;
+  --landing-gutter: 24px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.landing__nav,
+.landing-hero,
+.landing-stats,
+.landing-feature,
+.landing-pricing,
+.landing-footer {
+  width: 100%;
+  max-width: calc(var(--landing-max) + 2 * var(--landing-gutter));
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--landing-gutter);
+  padding-right: var(--landing-gutter);
+}
+
+.landing__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.landing__nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.landing-btn--primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.landing-btn--primary:hover {
+  background: var(--accent-strong);
+}
+
+/* White disc behind the multicolor G so it reads on both dark and light buttons */
+.landing-btn--primary svg {
+  box-sizing: content-box;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.landing-btn--ghost {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.landing-btn--ghost:hover {
+  background: var(--surface-2);
+}
+
+.landing-btn--block {
+  width: 100%;
+}
+
+/* ---------- Hero ---------- */
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 64px;
+  padding-top: 72px;
+  padding-bottom: 80px;
+}
+
+.landing-hero__title {
+  margin: 0;
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.landing-hero__lede {
+  margin: 24px 0 0;
+  max-width: 46ch;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.landing-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+/* Receipt: prints in on load, then the Premium price gets struck through. */
+.landing-receipt {
+  position: relative;
+  margin: 0;
+  padding: 28px 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transform: rotate(1.5deg);
+  animation: landing-print 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Torn bottom edge */
+.landing-receipt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 10px;
+  background:
+    linear-gradient(-45deg, transparent 7px, var(--surface) 0) 0 0 / 14px 10px repeat-x,
+    linear-gradient(45deg, transparent 7px, var(--surface) 0) 0 0 / 14px 10px repeat-x;
+}
+
+@keyframes landing-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: rotate(1.5deg) translateY(-12px);
+  }
+  to {
+    clip-path: inset(0 0 -20px 0);
+    transform: rotate(1.5deg) translateY(0);
+  }
+}
+
+.landing-receipt__head {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed var(--border-strong);
+  color: var(--text-dim);
+}
+
+.landing-receipt__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.landing-receipt__line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.landing-receipt__line dt,
+.landing-receipt__line dd {
+  margin: 0;
+}
+
+.landing-receipt__line--muted {
+  color: var(--text-dim);
+}
+
+.landing-receipt__line--struck dd {
+  color: var(--red);
+}
+
+.landing-receipt__line--struck s {
+  position: relative;
+  text-decoration: none;
+}
+
+.landing-receipt__line--struck s::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: 50%;
+  height: 2px;
+  background: currentColor;
+  transform-origin: left center;
+  animation: landing-strike 0.4s ease-out 0.75s both;
+}
+
+@keyframes landing-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.landing-receipt__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.landing-receipt__total span:last-child {
+  font-size: 30px;
+  color: var(--green);
+  letter-spacing: -0.02em;
+}
+
+.landing-receipt__total small {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.landing-receipt__note {
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* ---------- Live stats ---------- */
+.landing-stats {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 28px;
+  padding-bottom: 28px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  /* Rules span the content column, not the gutters */
+  background:
+    linear-gradient(var(--border), var(--border)) top center / calc(100% - 2 * var(--landing-gutter)) 1px no-repeat,
+    linear-gradient(var(--border), var(--border)) bottom center / calc(100% - 2 * var(--landing-gutter)) 1px no-repeat;
+}
+
+.landing-stats span {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ---------- Feature rows ---------- */
+.landing-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 64px;
+  padding-top: 96px;
+}
+
+.landing-feature--flip .landing-feature__copy {
+  order: 2;
+}
+
+.landing-feature__title {
+  margin: 0;
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.landing-feature__body {
+  margin: 16px 0 0;
+  max-width: 48ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.landing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.landing-list li {
+  position: relative;
+  padding-left: 26px;
+}
+
+/* Checkmark */
+.landing-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 12px;
+  height: 6px;
+  border-left: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(-45deg);
+}
+
+/* Company-questions mock, styled after the real Companies tab */
+.landing-mock {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.landing-mock__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.landing-mock__company {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.landing-mock__windows {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.landing-mock__window {
+  padding: 4px 9px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.landing-mock__window--active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.landing-mock__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-mock__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+}
+
+.landing-mock__row + .landing-mock__row {
+  border-top: 1px solid var(--border);
+}
+
+.landing-mock__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+}
+
+.landing-mock__check--solved {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green);
+}
+
+.landing-mock__difficulty {
+  flex-shrink: 0;
+  width: 62px;
+  padding: 3px 0;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.landing-mock__difficulty--easy {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+
+.landing-mock__difficulty--medium {
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+  color: var(--amber);
+}
+
+.landing-mock__difficulty--hard {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+.landing-mock__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.landing-mock__name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-mock__topics {
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-mock__freq {
+  flex-shrink: 0;
+  width: 64px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.landing-mock__freq-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-dim);
+}
+
+/* Jobs merge diagram: three source lists -> one deduped feed */
+.landing-merge {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) 40px minmax(0, 1.2fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-merge__sources {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.landing-merge__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.landing-merge__source-name {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.landing-merge__chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.landing-merge__chip--dup,
+.landing-merge__badge {
+  background: color-mix(in srgb, var(--amber) 18%, transparent);
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.landing-merge__arrow {
+  width: 40px;
+  height: 160px;
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+
+.landing-merge__feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.landing-merge__job {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  padding: 12px 14px;
+}
+
+.landing-merge__job + .landing-merge__job {
+  border-top: 1px solid var(--border);
+}
+
+.landing-merge__job-company {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.landing-merge__job-title {
+  grid-column: 1;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.landing-merge__badge {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---------- Pricing ---------- */
+.landing-pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120px;
+  padding-bottom: 120px;
+}
+
+.landing-pricing__title {
+  margin: 0 0 32px;
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.landing-plan {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.landing-plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.landing-plan__amount {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.landing-plan__period {
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+.landing-plan__trial {
+  display: inline-block;
+  margin: 16px 0 0;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.landing-list--plan {
+  margin-bottom: 28px;
+}
+
+.landing-plan__fine {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.landing-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 24px;
+  padding-bottom: 32px;
+  background: linear-gradient(var(--border), var(--border)) top center / calc(100% - 2 * var(--landing-gutter)) 1px
+    no-repeat;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+@media (max-width: 860px) {
+  .landing {
+    --landing-gutter: 16px;
+  }
+
+  .landing-hero,
+  .landing-feature {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .landing-hero {
+    padding-top: 40px;
+    padding-bottom: 64px;
+  }
+
+  .landing-feature {
+    padding-top: 72px;
+  }
+
+  .landing-feature--flip .landing-feature__copy {
+    order: 0;
+  }
+
+  .landing-receipt {
+    transform: none;
+    animation-name: none;
+  }
+
+  .landing-merge {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .landing-merge__arrow {
+    display: none;
+  }
+
+  .landing-stats {
+    font-size: 17px;
+  }
+
+  .landing-pricing {
+    padding-top: 88px;
+    padding-bottom: 88px;
+  }
+
+  .landing-plan {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .landing-hero__ctas .landing-btn {
+    width: 100%;
+  }
+
+  .landing-mock__topics,
+  .landing-mock__window:not(.landing-mock__window--active) {
+    display: none;
+  }
+}
