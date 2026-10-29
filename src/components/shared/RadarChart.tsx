@@ -45,9 +45,10 @@ export function RadarChart({ axes }: RadarChartProps) {
         <Radar
           name="Topic score"
           dataKey="score"
-          stroke="var(--accent)"
-          fill="var(--accent)"
-          fillOpacity={0.35}
+          // The picked company's hue on the Companies tab; plain accent elsewhere.
+          stroke="var(--company-hue, var(--accent))"
+          fill="var(--company-hue, var(--accent))"
+          fillOpacity={0.28}
           strokeWidth={2}
         />
       </RechartsRadarChart>

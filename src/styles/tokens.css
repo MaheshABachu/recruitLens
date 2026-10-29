@@ -39,6 +39,19 @@
   --accent-contrast: #ffffff;
   --amber: #a37d00;
   --backdrop: rgba(23, 20, 14, 0.35);
+
+  /* Company hues — each company gets one (src/lib/companyColors.ts) and the
+     picked-company view re-themes itself via --company-hue. Kept clear of
+     the green/amber/red difficulty colors. Darker here so text set in a hue
+     still reads on cream; brighter in dark mode. */
+  --hue-cobalt: #3563d6;
+  --hue-violet: #7a52d1;
+  --hue-teal: #0f7a72;
+  --hue-rose: #c23d64;
+  --hue-sky: #1b72a3;
+  --hue-olive: #557214;
+  --hue-orange: #a6560f;
+  --hue-plum: #9c3f97;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +73,14 @@
     --backdrop: rgba(10, 9, 6, 0.6);
     --green: #4fae7d;
     --red: #d97873;
+    --hue-cobalt: #7c9dff;
+    --hue-violet: #a98bff;
+    --hue-teal: #45c2b5;
+    --hue-rose: #f07b9d;
+    --hue-sky: #5ec0ef;
+    --hue-olive: #a8cf52;
+    --hue-orange: #f2a35a;
+    --hue-plum: #e07ad8;
   }
 }
 
@@ -81,4 +102,12 @@
   --backdrop: rgba(10, 9, 6, 0.6);
   --green: #4fae7d;
   --red: #d97873;
+  --hue-cobalt: #7c9dff;
+  --hue-violet: #a98bff;
+  --hue-teal: #45c2b5;
+  --hue-rose: #f07b9d;
+  --hue-sky: #5ec0ef;
+  --hue-olive: #a8cf52;
+  --hue-orange: #f2a35a;
+  --hue-plum: #e07ad8;
 }

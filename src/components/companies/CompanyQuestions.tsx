@@ -18,6 +18,12 @@ interface CompanyQuestionsProps {
 type SortBy = "frequency" | "name";
 type SolvedFilter = "all" | "solved" | "unsolved";
 
+// Filters moved off their default get a hue outline, so it's obvious which
+// ones are narrowing the list.
+function filterClass(isActive: boolean) {
+  return `stage-filter__select ${isActive ? "stage-filter__select--active" : ""}`;
+}
+
 const DIFFICULTIES: { value: QuestionDifficulty | "all"; label: string }[] = [
   { value: "all", label: "Difficulty" },
   { value: "easy", label: "Easy" },
@@ -73,7 +79,7 @@ export function CompanyQuestions({
 
       <div className="company-questions__filters">
         <select
-          className="stage-filter__select"
+          className={filterClass(timeWindow !== "all_time")}
           value={timeWindow}
           onChange={(e) => setTimeWindow(e.target.value as QuestionTimeWindow)}
           aria-label="Filter by time window"
@@ -86,7 +92,7 @@ export function CompanyQuestions({
         </select>
 
         <select
-          className="stage-filter__select"
+          className={filterClass(difficulty !== "all")}
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value as QuestionDifficulty | "all")}
           aria-label="Filter by difficulty"
@@ -99,7 +105,7 @@ export function CompanyQuestions({
         </select>
 
         <select
-          className="stage-filter__select"
+          className={filterClass(solvedFilter !== "all")}
           value={solvedFilter}
           onChange={(e) => setSolvedFilter(e.target.value as SolvedFilter)}
           aria-label="Filter by solved status"
@@ -110,7 +116,7 @@ export function CompanyQuestions({
         </select>
 
         <select
-          className="stage-filter__select"
+          className={filterClass(sortBy !== "frequency")}
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortBy)}
           aria-label="Sort questions"
@@ -127,7 +133,10 @@ export function CompanyQuestions({
           {rows.map((q) => {
             const isSolved = solvedSlugs.has(q.problem_slug);
             return (
-              <li key={q.problem_slug} className="company-questions__row">
+              <li
+                key={q.problem_slug}
+                className={`company-questions__row ${isSolved ? "company-questions__row--solved" : ""}`}
+              >
                 <span
                   className="company-questions__solved"
                   aria-label={isSolved ? "Solved" : "Not solved"}
@@ -163,7 +172,15 @@ export function CompanyQuestions({
                     </span>
                   )}
                 </span>
-                <span className="company-questions__frequency">{q.frequency_score.toFixed(1)}%</span>
+                <span className="company-questions__frequency" title="How often this company asks it">
+                  <span className="company-questions__frequency-bar" aria-hidden="true">
+                    <span
+                      className="company-questions__frequency-fill"
+                      style={{ width: `${Math.min(100, Math.max(0, q.frequency_score))}%` }}
+                    />
+                  </span>
+                  {q.frequency_score.toFixed(1)}%
+                </span>
               </li>
             );
           })}

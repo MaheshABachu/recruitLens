@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { CompanyPicker } from "./CompanyPicker";
-import { FeaturedCompanies, PinIcon } from "./FeaturedCompanies";
+import { FeaturedCompanies, PinIcon, buildTiles } from "./FeaturedCompanies";
+import { CompanyMonogram } from "./CompanyMonogram";
+import { TrendingQuestions } from "./TrendingQuestions";
 import { ProgressRing, type DifficultyTally } from "./ProgressRing";
 import { CompanyQuestions } from "./CompanyQuestions";
 import { LeetCodeSync, type LeetCodeSyncState } from "./LeetCodeSync";
@@ -11,6 +13,8 @@ import { useLcCompanies } from "../../hooks/useLcCompanies";
 import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
 import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
 import { useUserCompanies } from "../../hooks/useUserCompanies";
+import { useCompanyStats } from "../../hooks/useCompanyStats";
+import { companyHueVar } from "../../lib/companyColors";
 import { computeTopicScores } from "../../lib/topicProfile";
 import type { CompanyQuestion, QuestionDifficulty, QuestionTimeWindow } from "../../lib/companyQuestions";
 
@@ -66,6 +70,10 @@ export function CompaniesBoard({ leetCode }: { leetCode: LeetCodeSyncState }) {
   const { pinned, inProcess, togglePin, toggleInProcess } = useUserCompanies();
   const isPinned = !!selected && pinned.includes(selected);
   const isInProcess = !!selected && inProcess.has(selected);
+  // Stats are only shown on the full grid (not the compact strip), so key them
+  // off the unselected tile list — picking a company doesn't refetch.
+  const gridNames = useMemo(() => buildTiles(companies, pinned, null), [companies, pinned]);
+  const companyStats = useCompanyStats(gridNames, solvedVersion);
 
   const scores = useMemo(() => computeTopicScores(questions, timeWindow), [questions, timeWindow]);
   const progress = useMemo(
@@ -74,10 +82,16 @@ export function CompaniesBoard({ leetCode }: { leetCode: LeetCodeSyncState }) {
   );
 
   return (
-    <main className="companies-board">
+    // --company-hue re-themes the picked-company view (progress arc, radar,
+    // topic bars, frequency bars) in that company's color.
+    <main
+      className="companies-board"
+      style={selected ? ({ "--company-hue": companyHueVar(selected) } as CSSProperties) : undefined}
+    >
       <div className="companies-board__header">
         <div className="companies-board__heading">
           <div className="companies-board__title-row">
+            {selected && <CompanyMonogram name={selected} size="lg" />}
             <h1 className="companies-board__title">{selected ?? "Company Questions"}</h1>
             {selected && (
               <button
@@ -121,13 +135,18 @@ export function CompaniesBoard({ leetCode }: { leetCode: LeetCodeSyncState }) {
       {companiesLoading ? (
         <LoadingSpinner />
       ) : (
-        <FeaturedCompanies companies={companies} pinned={pinned} selected={selected} onSelect={setSelected} />
+        <FeaturedCompanies
+          companies={companies}
+          pinned={pinned}
+          selected={selected}
+          onSelect={setSelected}
+          stats={companyStats}
+          hasLeetCode={leetCode.username !== null}
+        />
       )}
 
       {companiesLoading ? null : !selected ? (
-        <p className="companies-board__empty">
-          Pick a company above, or search the full bank, to see its question mix, topic profile, and your progress against it.
-        </p>
+        <TrendingQuestions solvedSlugs={solvedSlugs} onSelectCompany={setSelected} />
       ) : questionsLoading ? (
         <LoadingSpinner />
       ) : questions.length === 0 ? (

@@ -211,6 +211,13 @@ button:disabled {
   color: var(--text);
 }
 
+.stage-filter__select--active,
+.stage-filter__select--active:hover {
+  border-color: var(--company-hue, var(--accent));
+  background: color-mix(in srgb, var(--company-hue, var(--accent)) 10%, var(--surface));
+  color: var(--text);
+}
+
 /* ---------- Shared: Tag / Card ---------- */
 .tag {
   display: inline-flex;
@@ -323,6 +330,9 @@ button:disabled {
   min-width: 0;
   min-height: 180px;
   max-height: 360px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -338,6 +348,15 @@ button:disabled {
 
 .company-questions__row + .company-questions__row {
   border-top: 1px solid var(--border);
+}
+
+.company-questions__row:hover {
+  background: color-mix(in srgb, var(--company-hue, var(--accent)) 6%, transparent);
+}
+
+.company-questions__row--solved {
+  box-shadow: inset 3px 0 0 var(--green);
+  background: color-mix(in srgb, var(--green) 6%, transparent);
 }
 
 .company-questions__solved {
@@ -385,14 +404,16 @@ button:disabled {
 
 .company-questions__name {
   font-size: 13px;
+  font-weight: 500;
   color: var(--text);
+  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .company-questions__name:hover {
-  color: var(--accent);
+  color: var(--company-hue, var(--accent));
   text-decoration: underline;
 }
 
@@ -406,11 +427,29 @@ button:disabled {
 
 .company-questions__frequency {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 104px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-faint);
-  width: 48px;
-  text-align: right;
+  color: var(--text-dim);
+}
+
+.company-questions__frequency-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.company-questions__frequency-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--company-hue, var(--text-dim));
 }
 
 /* ---------- Jobs board (daily-synced new-grad postings) ---------- */
@@ -621,6 +660,9 @@ a.jobs-board__company:hover {
   display: flex;
   flex-direction: column;
   max-height: clamp(320px, 34vw, 460px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -660,7 +702,11 @@ a.jobs-board__company:hover {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--company-hue, var(--accent)) 55%, var(--surface)),
+    var(--company-hue, var(--accent))
+  );
 }
 
 .topic-profile__bar-score {
@@ -1091,9 +1137,9 @@ a.jobs-board__company:hover {
 
 .pin-button--active,
 .pin-button--active:hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
+  border-color: var(--company-hue, var(--accent));
+  background: color-mix(in srgb, var(--company-hue, var(--accent)) 16%, var(--surface));
+  color: var(--company-hue, var(--accent));
 }
 
 .companies-board__count {
@@ -1116,62 +1162,109 @@ a.jobs-board__company:hover {
   color: var(--text-dim);
 }
 
-/* ---------- Featured companies (quick-pick matrix) ---------- */
+/* ---------- Company monogram (two-letter badge in the company's hue) ---------- */
+.company-monogram {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--monogram-hue) 16%, var(--surface));
+  color: var(--monogram-hue);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  transition: box-shadow 0.15s ease;
+}
+
+.company-monogram--sm {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.company-monogram--md {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+
+.company-monogram--lg {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+/* ---------- Featured companies (quick-pick matrix) ----------
+ * Each tile carries its company's hue in --tile-hue: monogram, hover border
+ * and the solved bar all use it. */
 .featured-companies {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .featured-companies__tile {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   min-width: 0;
-  padding: 18px 16px;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .featured-companies__tile:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--tile-hue) 55%, var(--border));
+  background: color-mix(in srgb, var(--tile-hue) 4%, var(--surface));
+}
+
+.featured-companies__tile:hover .company-monogram {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tile-hue) 14%, transparent);
 }
 
 .featured-companies__tile:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tile-hue);
   outline-offset: 2px;
 }
 
 .featured-companies__tile--active,
 .featured-companies__tile--active:hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
-  transform: none;
+  border-color: var(--tile-hue);
+  background: color-mix(in srgb, var(--tile-hue) 14%, var(--surface));
+}
+
+.featured-companies__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .featured-companies__name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .featured-companies__badge {
   flex-shrink: 0;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--text-dim);
+  background: color-mix(in srgb, var(--tile-hue) 12%, transparent);
+  color: var(--tile-hue);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1179,17 +1272,116 @@ a.jobs-board__company:hover {
 
 .featured-companies__pin {
   flex-shrink: 0;
+  color: var(--tile-hue);
+}
+
+.featured-companies__stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 17px;
+  font-size: 12px;
   color: var(--text-dim);
 }
 
-.featured-companies__tile--active .featured-companies__pin {
-  color: inherit;
+.featured-companies__stats b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
 }
 
-.featured-companies__tile--active .featured-companies__badge {
-  background: transparent;
-  color: inherit;
-  opacity: 0.75;
+.featured-companies__hot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.featured-companies__hot-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tile-hue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tile-hue) 22%, transparent);
+}
+
+.featured-companies__meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 15px;
+}
+
+.featured-companies__bar {
+  flex: 1;
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.featured-companies__bar-fill {
+  display: block;
+  /* A visible sliver even at a few percent, so progress never reads as none. */
+  min-width: 4px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tile-hue);
+}
+
+.featured-companies__bar--mix {
+  gap: 2px;
+  background: none;
+}
+
+.featured-companies__mix {
+  flex-basis: 0;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.featured-companies__mix--easy {
+  background: var(--green);
+}
+
+.featured-companies__mix--medium {
+  background: var(--amber);
+}
+
+.featured-companies__mix--hard {
+  background: var(--red);
+}
+
+.featured-companies__meter-label {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.featured-companies__skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-companies__skeleton {
+    animation: none;
+  }
 }
 
 /* Once a company is picked the matrix shrinks to a dense switcher strip so
@@ -1200,11 +1392,17 @@ a.jobs-board__company:hover {
 }
 
 .featured-companies--compact .featured-companies__tile {
-  padding: 8px 10px;
+  padding: 7px 9px;
+  border-radius: var(--radius-md);
+}
+
+.featured-companies--compact .featured-companies__head {
+  gap: 7px;
 }
 
 .featured-companies--compact .featured-companies__name {
   font-size: 13px;
+  font-weight: 600;
 }
 
 .featured-companies--compact .featured-companies__badge {
@@ -1212,6 +1410,10 @@ a.jobs-board__company:hover {
 }
 
 @media (max-width: 1080px) {
+  .featured-companies {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .featured-companies--compact {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1220,10 +1422,173 @@ a.jobs-board__company:hover {
 @media (max-width: 720px) {
   .featured-companies {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .featured-companies__tile {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  /* Two columns leave no room for the chip; the name matters more. */
+  .featured-companies__badge {
+    display: none;
   }
 
   .featured-companies--compact {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Trending questions (empty state before a company is picked) ---------- */
+.trending {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.trending__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.trending__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.trending__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.trending__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 16px;
+}
+
+.trending__row + .trending__row {
+  border-top: 1px solid var(--border);
+}
+
+.trending__row--solved {
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.trending__row--loading .featured-companies__skeleton {
+  height: 12px;
+}
+
+.trending__rank {
+  flex-shrink: 0;
+  width: 22px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+/* The top three ranks pick up a warm-to-cool run of hues. */
+.trending__row:nth-child(1) .trending__rank {
+  color: var(--hue-rose);
+}
+
+.trending__row:nth-child(2) .trending__rank {
+  color: var(--hue-orange);
+}
+
+.trending__row:nth-child(3) .trending__rank {
+  color: var(--hue-violet);
+}
+
+.trending__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trending__name:hover {
+  text-decoration: underline;
+}
+
+.trending__solved {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--green);
+}
+
+.trending__companies {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trending__company {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trending__company .company-monogram {
+  border-radius: 999px;
+}
+
+.trending__company:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.trending__more {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+@media (max-width: 860px) {
+  .trending__row {
+    flex-wrap: wrap;
+  }
+
+  .trending__companies {
+    flex-basis: 100%;
+    padding-left: 34px;
+  }
+}
+
+@media (max-width: 520px) {
+  .trending__company-name {
+    display: none;
+  }
+
+  .trending__company {
+    padding-right: 2px;
   }
 }
 
@@ -1245,6 +1610,22 @@ a.jobs-board__company:hover {
 
 .companies-board__card {
   min-width: 0;
+  padding: 20px 22px;
+}
+
+.companies-board__card .card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.companies-board__card .card__title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--company-hue, var(--accent));
 }
 
 .companies-board__questions {
@@ -1431,6 +1812,53 @@ a.jobs-board__company:hover {
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
+}
+
+.progress-ring__track {
+  stroke: color-mix(in srgb, var(--company-hue, var(--amber)) 14%, var(--surface-2));
+}
+
+.progress-ring__arc {
+  stroke: var(--company-hue, var(--amber));
+  transition: stroke-dasharray 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.progress-ring__dial {
+  background: color-mix(in srgb, var(--company-hue, var(--surface-2)) 5%, var(--surface-2));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-ring__arc {
+    transition: none;
+  }
+}
+
+.progress-ring__tile-bar {
+  align-self: stretch;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.progress-ring__tile-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+.progress-ring__tile--easy .progress-ring__tile-bar {
+  color: var(--green);
+}
+
+.progress-ring__tile--medium .progress-ring__tile-bar {
+  color: var(--amber);
+}
+
+.progress-ring__tile--hard .progress-ring__tile-bar {
+  color: var(--red);
 }
 
 .progress-ring__tile {

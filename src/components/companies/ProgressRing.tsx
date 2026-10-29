@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { QuestionDifficulty } from "../../lib/companyQuestions";
 
 export interface DifficultyTally {
@@ -27,6 +28,12 @@ const TILES: { difficulty: QuestionDifficulty; label: string }[] = [
 export function ProgressRing({ solved, total, byDifficulty }: ProgressRingProps) {
   const ratio = total === 0 ? 0 : solved / total;
   const remaining = Math.max(0, total - solved);
+  // Start the arc empty and let the CSS transition sweep it to its value.
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div className="progress-ring">
@@ -38,20 +45,20 @@ export function ProgressRing({ solved, total, byDifficulty }: ProgressRingProps)
               cy="70"
               r={RADIUS}
               fill="none"
-              stroke="var(--surface-2)"
+              className="progress-ring__track"
               strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${ARC_LENGTH} ${CIRCUMFERENCE}`}
             />
             <circle
+              className="progress-ring__arc"
               cx="70"
               cy="70"
               r={RADIUS}
               fill="none"
-              stroke="var(--amber)"
               strokeWidth="8"
               strokeLinecap="round"
-              strokeDasharray={`${ARC_LENGTH * ratio} ${CIRCUMFERENCE}`}
+              strokeDasharray={`${drawn ? ARC_LENGTH * ratio : 0} ${CIRCUMFERENCE}`}
             />
           </g>
         </svg>
@@ -73,6 +80,12 @@ export function ProgressRing({ solved, total, byDifficulty }: ProgressRingProps)
               <span className="progress-ring__tile-label">{label}</span>
               <span className="progress-ring__tile-value">
                 {tally.solved}/{tally.total}
+              </span>
+              <span className="progress-ring__tile-bar" aria-hidden="true">
+                <span
+                  className="progress-ring__tile-fill"
+                  style={{ width: `${tally.total ? (tally.solved / tally.total) * 100 : 0}%` }}
+                />
               </span>
             </div>
           );
