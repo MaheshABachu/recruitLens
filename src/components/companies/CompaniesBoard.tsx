@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CompanyPicker } from "./CompanyPicker";
+import { FeaturedCompanies, PinIcon } from "./FeaturedCompanies";
 import { ProgressRing, type DifficultyTally } from "./ProgressRing";
 import { CompanyQuestions } from "./CompanyQuestions";
 import { TopicChart } from "../shared/TopicChart";
@@ -8,6 +9,7 @@ import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { useLcCompanies } from "../../hooks/useLcCompanies";
 import { useCompanyQuestions } from "../../hooks/useCompanyQuestions";
 import { useLeetCodeSolvedSlugs } from "../../hooks/useLeetCodeSolvedSlugs";
+import { useUserCompanies } from "../../hooks/useUserCompanies";
 import { computeTopicScores } from "../../lib/topicProfile";
 import type { CompanyQuestion, QuestionDifficulty, QuestionTimeWindow } from "../../lib/companyQuestions";
 
@@ -44,6 +46,14 @@ function tallyProgress(questions: CompanyQuestion[], timeWindow: QuestionTimeWin
   return { total, solved, byDifficulty };
 }
 
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
 export function CompaniesBoard() {
   const { companies, loading: companiesLoading } = useLcCompanies();
   const [selected, setSelected] = useState<string | null>(null);
@@ -51,6 +61,9 @@ export function CompaniesBoard() {
 
   const { questions, loading: questionsLoading } = useCompanyQuestions(selected ?? undefined);
   const solvedSlugs = useLeetCodeSolvedSlugs();
+  const { pinned, inProcess, togglePin, toggleInProcess } = useUserCompanies();
+  const isPinned = !!selected && pinned.includes(selected);
+  const isInProcess = !!selected && inProcess.has(selected);
 
   const scores = useMemo(() => computeTopicScores(questions, timeWindow), [questions, timeWindow]);
   const progress = useMemo(
@@ -62,7 +75,33 @@ export function CompaniesBoard() {
     <main className="companies-board">
       <div className="companies-board__header">
         <div className="companies-board__heading">
-          <h1 className="companies-board__title">{selected ?? "Companies"}</h1>
+          <div className="companies-board__title-row">
+            <h1 className="companies-board__title">{selected ?? "Company Questions"}</h1>
+            {selected && (
+              <button
+                type="button"
+                className={`pin-button ${isPinned ? "pin-button--active" : ""}`}
+                onClick={() => togglePin(selected)}
+                aria-pressed={isPinned}
+                disabled={isInProcess}
+                title={isInProcess ? "In-process companies stay pinned" : undefined}
+              >
+                <PinIcon filled={isPinned} />
+                {isPinned ? "Pinned" : "Pin"}
+              </button>
+            )}
+            {selected && (
+              <button
+                type="button"
+                className={`pin-button ${isInProcess ? "pin-button--active" : ""}`}
+                onClick={() => toggleInProcess(selected)}
+                aria-pressed={isInProcess}
+              >
+                {isInProcess && <CheckIcon />}
+                In process
+              </button>
+            )}
+          </div>
           <span className="companies-board__count">
             {selected
               ? `${progress.total} question${progress.total === 1 ? "" : "s"} in this window`
@@ -77,9 +116,13 @@ export function CompaniesBoard() {
 
       {companiesLoading ? (
         <LoadingSpinner />
-      ) : !selected ? (
+      ) : (
+        <FeaturedCompanies companies={companies} pinned={pinned} selected={selected} onSelect={setSelected} />
+      )}
+
+      {companiesLoading ? null : !selected ? (
         <p className="companies-board__empty">
-          Search for a company to see its question mix, topic profile, and your progress against it.
+          Pick a company above, or search the full bank, to see its question mix, topic profile, and your progress against it.
         </p>
       ) : questionsLoading ? (
         <LoadingSpinner />

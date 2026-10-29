@@ -7,12 +7,12 @@ import { LoginScreen } from "./components/auth/LoginScreen";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
 
-type Tab = "Companies" | "Jobs";
-const TABS: Tab[] = ["Companies", "Jobs"];
+type Tab = "Company Questions" | "Jobs";
+const TABS: Tab[] = ["Company Questions", "Jobs"];
 
 export default function App() {
   const { session, loading: authLoading, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>("Companies");
+  const [activeTab, setActiveTab] = useState<Tab>("Company Questions");
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const userId = session?.user.id ?? null;
 
@@ -54,7 +54,7 @@ export default function App() {
         })}
       </nav>
 
-      {activeTab === "Companies" && <CompaniesBoard />}
+      {activeTab === "Company Questions" && <CompaniesBoard />}
 
       {activeTab === "Jobs" && <JobsBoard />}
 
