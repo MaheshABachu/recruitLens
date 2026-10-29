@@ -21,6 +21,7 @@ export default function App() {
     username: leetCodeUsername,
     stats: leetCodeStats,
     lastSyncedAt: leetCodeLastSyncedAt,
+    lastChangedAt: leetCodeLastChangedAt,
     error: leetCodeError,
     connect: connectLeetCode,
     resync: resyncLeetCode,
@@ -54,7 +55,7 @@ export default function App() {
         })}
       </nav>
 
-      {activeTab === "Company Questions" && <CompaniesBoard />}
+      {activeTab === "Company Questions" && <CompaniesBoard solvedVersion={leetCodeLastChangedAt} />}
 
       {activeTab === "Jobs" && <JobsBoard />}
 

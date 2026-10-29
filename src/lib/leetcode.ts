@@ -11,6 +11,9 @@ export interface LeetCodeAccount {
   easy_count: number | null;
   medium_count: number | null;
   hard_count: number | null;
+  latest_submission_id: string | null;
+  last_checked_at: string | null;
+  last_changed_at: string | null;
 }
 
 export async function getLeetCodeAccount(): Promise<LeetCodeAccount | null> {
@@ -31,6 +34,16 @@ export async function triggerLeetCodeSync(username?: string): Promise<void> {
     body: username ? { username } : {},
   });
   if (error) throw error;
+}
+
+// Cheap change probe: the function asks LeetCode for only the newest accepted
+// submission and runs the full sync only if its id differs from the stored
+// latest_submission_id. Awaited directly (unlike triggerLeetCodeSync) — the
+// no-change case is a single GraphQL call and returns the refreshed row.
+export async function checkLeetCodeForChanges(): Promise<{ changed: boolean; account: LeetCodeAccount | null }> {
+  const { data, error } = await supabase.functions.invoke("leetcode-sync", { body: { mode: "check" } });
+  if (error) throw error;
+  return { changed: !!data?.changed, account: data?.account ?? null };
 }
 
 // Slugs the connected account has an accepted solve for, keyed the same way

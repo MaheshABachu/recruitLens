@@ -54,13 +54,13 @@ function CheckIcon() {
   );
 }
 
-export function CompaniesBoard() {
+export function CompaniesBoard({ solvedVersion }: { solvedVersion: string | null }) {
   const { companies, loading: companiesLoading } = useLcCompanies();
   const [selected, setSelected] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<QuestionTimeWindow>("all_time");
 
   const { questions, loading: questionsLoading } = useCompanyQuestions(selected ?? undefined);
-  const solvedSlugs = useLeetCodeSolvedSlugs();
+  const solvedSlugs = useLeetCodeSolvedSlugs(solvedVersion);
   const { pinned, inProcess, togglePin, toggleInProcess } = useUserCompanies();
   const isPinned = !!selected && pinned.includes(selected);
   const isInProcess = !!selected && inProcess.has(selected);
