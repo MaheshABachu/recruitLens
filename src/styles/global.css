@@ -579,8 +579,8 @@ button:disabled {
 
 .company-questions__difficulty--medium {
   border-color: transparent;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+  color: var(--amber);
 }
 
 .company-questions__difficulty--hard {
