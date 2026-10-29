@@ -1401,3 +1401,23 @@ a.jobs-board__company:hover {
 .topic-profile__body--column .topic-profile__bars {
   max-height: 260px;
 }
+
+/* ---------- Billing card (settings panel) ---------- */
+.billing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.billing-card__status {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.billing-card__error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--red);
+}

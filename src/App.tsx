@@ -4,8 +4,11 @@ import { JobsBoard } from "./components/jobs/JobsBoard";
 import { CompaniesBoard } from "./components/companies/CompaniesBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { LandingPage } from "./components/landing/LandingPage";
+import { Paywall } from "./components/billing/Paywall";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
+import { useSubscription } from "./hooks/useSubscription";
+import { BILLING_ENABLED } from "./lib/billing";
 
 type Tab = "Company Questions" | "Jobs";
 const TABS: Tab[] = ["Company Questions", "Jobs"];
@@ -16,6 +19,9 @@ export default function App() {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const userId = session?.user.id ?? null;
 
+  const billing = useSubscription(BILLING_ENABLED ? userId : null);
+  const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
+
   const {
     status: leetCodeStatus,
     username: leetCodeUsername,
@@ -25,10 +31,21 @@ export default function App() {
     error: leetCodeError,
     connect: connectLeetCode,
     resync: resyncLeetCode,
-  } = useLeetCodeSync(userId);
+  } = useLeetCodeSync(isLockedOut ? null : userId);
 
   if (authLoading) return null;
   if (!session) return <LandingPage />;
+  if (isLockedOut) {
+    if (billing.loading && !billing.confirmingCheckout) return null;
+    return (
+      <Paywall
+        subscription={billing.subscription}
+        confirmingCheckout={billing.confirmingCheckout}
+        userEmail={session.user.email}
+        onSignOut={signOut}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -69,6 +86,7 @@ export default function App() {
           leetCodeError={leetCodeError}
           onConnectLeetCode={connectLeetCode}
           onResyncLeetCode={resyncLeetCode}
+          subscription={BILLING_ENABLED ? billing.subscription : undefined}
         />
       )}
     </div>

@@ -705,3 +705,44 @@
     display: none;
   }
 }
+
+/* ---------- Paywall (signed in, no active subscription) ---------- */
+.paywall {
+  display: flex;
+  flex-direction: column;
+}
+
+.paywall__body {
+  flex: 1;
+  justify-content: center;
+  padding-top: 48px;
+  padding-bottom: 96px;
+}
+
+.paywall__body .landing-pricing__title {
+  margin-bottom: 8px;
+}
+
+.paywall__lede {
+  margin: 0 0 28px;
+  color: var(--text-dim);
+  font-size: 15px;
+  text-align: center;
+}
+
+.paywall__confirming {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.paywall__error {
+  margin: 12px 0 0;
+  color: var(--red);
+  font-size: 13px;
+  text-align: center;
+}
+
+.landing-btn:disabled {
+  opacity: 0.6;
+}

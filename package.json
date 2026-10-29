@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "import:company-questions": "tsx scripts/import-company-questions.ts",
-    "import:job-postings": "tsx scripts/import-job-postings.ts"
+    "import:job-postings": "tsx scripts/import-job-postings.ts",
+    "setup:stripe": "tsx scripts/setup-stripe.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

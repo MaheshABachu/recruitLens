@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import type { LeetCodeStatus } from "../../hooks/useLeetCodeSync";
 import { LeetCodeConnectCard } from "./LeetCodeConnectCard";
+import { BillingCard } from "./BillingCard";
+import type { Subscription } from "../../lib/billing";
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -11,6 +13,8 @@ interface SettingsPanelProps {
   leetCodeError: string | null;
   onConnectLeetCode: (username: string) => void;
   onResyncLeetCode: () => void;
+  // undefined when billing is disabled — hides the Billing section entirely.
+  subscription?: Subscription | null;
 }
 
 export function SettingsPanel({
@@ -22,6 +26,7 @@ export function SettingsPanel({
   leetCodeError,
   onConnectLeetCode,
   onResyncLeetCode,
+  subscription,
 }: SettingsPanelProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -60,6 +65,13 @@ export function SettingsPanel({
               onResync={onResyncLeetCode}
             />
           </section>
+
+          {subscription !== undefined && (
+            <section>
+              <div className="settings-panel__section-title">Billing</div>
+              <BillingCard subscription={subscription} />
+            </section>
+          )}
         </div>
       </div>
     </div>
