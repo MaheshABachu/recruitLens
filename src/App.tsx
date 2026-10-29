@@ -5,6 +5,7 @@ import { CompaniesBoard } from "./components/companies/CompaniesBoard";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { LandingPage } from "./components/landing/LandingPage";
 import { Paywall } from "./components/billing/Paywall";
+import { SetPasswordScreen } from "./components/auth/SetPasswordScreen";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { useAuth } from "./hooks/useAuth";
 import { useSubscription } from "./hooks/useSubscription";
@@ -14,7 +15,7 @@ type Tab = "Company Questions" | "Jobs";
 const TABS: Tab[] = ["Company Questions", "Jobs"];
 
 export default function App() {
-  const { session, loading: authLoading, signOut } = useAuth();
+  const { session, loading: authLoading, passwordRecovery, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("Company Questions");
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const userId = session?.user.id ?? null;
@@ -35,6 +36,7 @@ export default function App() {
 
   if (authLoading) return null;
   if (!session) return <LandingPage />;
+  if (passwordRecovery) return <SetPasswordScreen onSignOut={signOut} />;
   if (isLockedOut) {
     if (billing.loading && !billing.confirmingCheckout) return null;
     return (

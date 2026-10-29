@@ -1,8 +1,9 @@
-import { useAuth } from "../../hooks/useAuth";
+import { useState } from "react";
 import { useLandingStats } from "../../hooks/useLandingStats";
 import { ThemeToggle } from "../layout/ThemeToggle";
-import { GoogleIcon } from "../shared/GoogleIcon";
 import { Logo } from "../shared/Logo";
+import { AuthDialog } from "../auth/AuthDialog";
+import type { AuthMode } from "../auth/AuthForm";
 import type { LandingStats } from "../../lib/landingStats";
 import { CHARITY, DONATION_SHARE, FREE_TRIAL_DAYS, PRICE_MONTHLY } from "../../lib/billing";
 
@@ -54,20 +55,11 @@ const FEED: { company: string; title: string; sources: number }[] = [
   { company: "Figma", title: "New Grad Engineer", sources: 1 },
 ];
 
-function StartTrialButton({ className = "" }: { className?: string }) {
-  const { signInWithGoogle } = useAuth();
-  return (
-    <button type="button" className={`landing-btn landing-btn--primary ${className}`} onClick={signInWithGoogle}>
-      <GoogleIcon />
-      Start your free week
-    </button>
-  );
-}
-
 export function LandingPage() {
-  const { signInWithGoogle } = useAuth();
   const stats = useLandingStats();
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null);
   const monthlySavings = LEETCODE_PREMIUM_MONTHLY - PRICE_MONTHLY;
+  const openSignUp = () => setAuthMode("sign-up");
 
   return (
     <div className="landing">
@@ -75,8 +67,11 @@ export function LandingPage() {
         <Logo />
         <div className="landing__nav-actions">
           <ThemeToggle />
-          <button type="button" className="landing-btn landing-btn--ghost" onClick={signInWithGoogle}>
+          <button type="button" className="landing-btn landing-btn--ghost" onClick={() => setAuthMode("sign-in")}>
             Sign in
+          </button>
+          <button type="button" className="landing-btn landing-btn--primary" onClick={openSignUp}>
+            Sign up
           </button>
         </div>
       </header>
@@ -94,7 +89,9 @@ export function LandingPage() {
               month after a free week, and {DONATION_PERCENT}% of it supports undocumented students in Central Texas.
             </p>
             <div className="landing-hero__ctas">
-              <StartTrialButton />
+              <button type="button" className="landing-btn landing-btn--primary" onClick={openSignUp}>
+                Start your free week
+              </button>
               <a className="landing-btn landing-btn--ghost" href="#pricing">
                 See what's included
               </a>
@@ -270,7 +267,9 @@ export function LandingPage() {
               <li>Automatic solved tracking from your LeetCode account</li>
               <li>The merged new-grad job feed, updated daily</li>
             </ul>
-            <StartTrialButton className="landing-btn--block" />
+            <button type="button" className="landing-btn landing-btn--primary landing-btn--block" onClick={openSignUp}>
+              Start your free week
+            </button>
             <p className="landing-plan__fine">
               Cancel anytime. {DONATION_PERCENT}% of revenue goes to {CHARITY.name}.
             </p>
@@ -282,6 +281,8 @@ export function LandingPage() {
         <span>© {new Date().getFullYear()} Vantage</span>
         <span>Not affiliated with LeetCode.</span>
       </footer>
+
+      <AuthDialog mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthMode(null)} />
     </div>
   );
 }

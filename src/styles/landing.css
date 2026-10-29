@@ -786,3 +786,262 @@
     padding-top: 88px;
   }
 }
+
+/* ---------- Auth (dialog on the landing page, full screen for password reset) ---------- */
+.auth-dialog {
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.auth-dialog__body {
+  position: relative;
+  padding: 32px;
+}
+
+.auth-dialog__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+}
+
+.auth-dialog__close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.auth-form__title {
+  margin: 0;
+  padding-right: 32px;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.auth-form__lede {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.auth-form > .landing-btn--ghost {
+  margin-top: 24px;
+}
+
+.auth-form__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 4px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.auth-form__divider::before,
+.auth-form__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.auth-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-form__label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.auth-form__field input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.auth-form__field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.auth-form__field small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.auth-form__error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--red);
+}
+
+.auth-form__fields .landing-btn--primary {
+  margin-top: 4px;
+}
+
+.auth-form__switch {
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.auth-form__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.auth-form__label-row .auth-form__link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.auth-form[role="status"] .auth-form__link {
+  margin-top: 20px;
+}
+
+.auth-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-screen__body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px 96px;
+}
+
+.auth-screen__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 420px) {
+  .landing__nav .landing-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .auth-dialog__body,
+  .auth-screen__card {
+    padding: 24px;
+  }
+}
+
+/* ---------- Auth dialog motion ----------
+ * Open: backdrop fades, panel fades up from a slight scale. Close: AuthDialog
+ * sets data-closing, which plays the reverse before dialog.close(). Switching
+ * between sign in / sign up / reset remounts .auth-form, replaying a quick fade.
+ */
+.auth-dialog[open] {
+  animation: auth-dialog-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.auth-dialog[open]::backdrop {
+  animation: auth-backdrop-in 0.22s ease-out;
+}
+
+.auth-dialog[data-closing] {
+  animation: auth-dialog-out 0.16s ease-in forwards;
+}
+
+.auth-dialog[data-closing]::backdrop {
+  animation: auth-backdrop-out 0.16s ease-in forwards;
+}
+
+.auth-form {
+  animation: auth-form-in 0.18s ease-out;
+}
+
+@keyframes auth-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes auth-dialog-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes auth-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-form-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-dialog[open],
+  .auth-dialog[open]::backdrop,
+  .auth-dialog[data-closing],
+  .auth-dialog[data-closing]::backdrop,
+  .auth-form {
+    animation: none;
+  }
+}
