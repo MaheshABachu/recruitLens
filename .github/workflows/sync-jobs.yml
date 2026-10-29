@@ -1,13 +1,13 @@
 name: Sync job postings
 
-# Every 20 minutes (GitHub Actions cron is UTC; minute-level cadence makes
+# Every 30 minutes (GitHub Actions cron is UTC; minute-level cadence makes
 # the DST offset irrelevant). Scheduled runs can be delayed or dropped under
 # load, so this is best-effort, not a hard SLA. Overlapping runs are harmless —
 # import:job-postings upserts on url_key — but the concurrency group below
 # skips a new run while one is still in flight anyway.
 on:
   schedule:
-    - cron: "*/20 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch: {}
 
 concurrency:
