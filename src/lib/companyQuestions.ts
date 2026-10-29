@@ -77,7 +77,32 @@ async function fetchAllCompanyQuestionRows(companyName: string): Promise<RawComp
 // scripts/import-company-questions.ts — not managed by this app at runtime.
 // Matches on company name only, case-insensitively and without wildcards, so
 // it's an exact match on name, not a fuzzy one.
-export async function getCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
+export function getCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
+  const key = companyName.toLowerCase();
+  let pending = inflight.get(key);
+  if (!pending) {
+    pending = loadCompanyQuestions(companyName).then((questions) => {
+      resolved.set(key, questions);
+      return questions;
+    });
+    inflight.set(key, pending);
+  }
+  return pending;
+}
+
+// Already-fetched results, readable synchronously so a revisited (or
+// hover-prefetched) company renders on click with no loading flash.
+export function getCachedCompanyQuestions(companyName: string): CompanyQuestion[] | undefined {
+  return resolved.get(companyName.toLowerCase());
+}
+
+// Session-lifetime caches — the question bank is static reference data, so
+// there's nothing to invalidate. A failed fetch resolves to [] and is cached
+// too, matching getCompanyQuestions' existing "log and show empty" behavior.
+const inflight = new Map<string, Promise<CompanyQuestion[]>>();
+const resolved = new Map<string, CompanyQuestion[]>();
+
+async function loadCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
   let data: RawCompanyQuestionRow[];
   try {
     data = await fetchAllCompanyQuestionRows(companyName);
