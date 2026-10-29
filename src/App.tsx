@@ -23,16 +23,7 @@ export default function App() {
   const billing = useSubscription(BILLING_ENABLED ? userId : null);
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
 
-  const {
-    status: leetCodeStatus,
-    username: leetCodeUsername,
-    stats: leetCodeStats,
-    lastSyncedAt: leetCodeLastSyncedAt,
-    lastChangedAt: leetCodeLastChangedAt,
-    error: leetCodeError,
-    connect: connectLeetCode,
-    resync: resyncLeetCode,
-  } = useLeetCodeSync(isLockedOut ? null : userId);
+  const leetCode = useLeetCodeSync(isLockedOut ? null : userId);
 
   if (authLoading) return null;
   if (!session) return <LandingPage />;
@@ -74,20 +65,13 @@ export default function App() {
         })}
       </nav>
 
-      {activeTab === "Company Questions" && <CompaniesBoard solvedVersion={leetCodeLastChangedAt} />}
+      {activeTab === "Company Questions" && <CompaniesBoard leetCode={leetCode} />}
 
       {activeTab === "Jobs" && <JobsBoard />}
 
       {isSettingsPanelOpen && (
         <SettingsPanel
           onClose={() => setIsSettingsPanelOpen(false)}
-          leetCodeStatus={leetCodeStatus}
-          leetCodeUsername={leetCodeUsername}
-          leetCodeStats={leetCodeStats}
-          leetCodeLastSyncedAt={leetCodeLastSyncedAt}
-          leetCodeError={leetCodeError}
-          onConnectLeetCode={connectLeetCode}
-          onResyncLeetCode={resyncLeetCode}
           subscription={BILLING_ENABLED ? billing.subscription : undefined}
         />
       )}

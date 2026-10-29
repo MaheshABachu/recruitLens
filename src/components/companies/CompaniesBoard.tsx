@@ -3,6 +3,7 @@ import { CompanyPicker } from "./CompanyPicker";
 import { FeaturedCompanies, PinIcon } from "./FeaturedCompanies";
 import { ProgressRing, type DifficultyTally } from "./ProgressRing";
 import { CompanyQuestions } from "./CompanyQuestions";
+import { LeetCodeSync, type LeetCodeSyncState } from "./LeetCodeSync";
 import { TopicChart } from "../shared/TopicChart";
 import { Card } from "../shared/Card";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
@@ -54,7 +55,8 @@ function CheckIcon() {
   );
 }
 
-export function CompaniesBoard({ solvedVersion }: { solvedVersion: string | null }) {
+export function CompaniesBoard({ leetCode }: { leetCode: LeetCodeSyncState }) {
+  const solvedVersion = leetCode.lastChangedAt;
   const { companies, loading: companiesLoading } = useLcCompanies();
   const [selected, setSelected] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<QuestionTimeWindow>("all_time");
@@ -108,6 +110,8 @@ export function CompaniesBoard({ solvedVersion }: { solvedVersion: string | null
               : `${companies.length} companies in the question bank`}
           </span>
         </div>
+
+        <LeetCodeSync leetCode={leetCode} />
 
         <div className="companies-board__controls">
           <CompanyPicker companies={companies} selected={selected} onSelect={setSelected} />

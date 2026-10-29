@@ -1,31 +1,15 @@
 import { useEffect } from "react";
-import type { LeetCodeStatus } from "../../hooks/useLeetCodeSync";
-import { LeetCodeConnectCard } from "./LeetCodeConnectCard";
 import { BillingCard } from "./BillingCard";
 import type { Subscription } from "../../lib/billing";
 
 interface SettingsPanelProps {
   onClose: () => void;
-  leetCodeStatus: LeetCodeStatus;
-  leetCodeUsername: string | null;
-  leetCodeStats: { solved: number; easy: number; medium: number; hard: number } | null;
-  leetCodeLastSyncedAt: string | null;
-  leetCodeError: string | null;
-  onConnectLeetCode: (username: string) => void;
-  onResyncLeetCode: () => void;
   // undefined when billing is disabled — hides the Billing section entirely.
   subscription?: Subscription | null;
 }
 
 export function SettingsPanel({
   onClose,
-  leetCodeStatus,
-  leetCodeUsername,
-  leetCodeStats,
-  leetCodeLastSyncedAt,
-  leetCodeError,
-  onConnectLeetCode,
-  onResyncLeetCode,
   subscription,
 }: SettingsPanelProps) {
   useEffect(() => {
@@ -53,19 +37,6 @@ export function SettingsPanel({
         </div>
 
         <div className="settings-panel__body">
-          <section>
-            <div className="settings-panel__section-title">LeetCode</div>
-            <LeetCodeConnectCard
-              status={leetCodeStatus}
-              username={leetCodeUsername}
-              stats={leetCodeStats}
-              lastSyncedAt={leetCodeLastSyncedAt}
-              error={leetCodeError}
-              onConnect={onConnectLeetCode}
-              onResync={onResyncLeetCode}
-            />
-          </section>
-
           {subscription !== undefined && (
             <section>
               <div className="settings-panel__section-title">Billing</div>
