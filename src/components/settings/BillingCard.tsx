@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { openBillingPortal, type Subscription } from "../../lib/billing";
+import { PRICE_MONTHLY, openBillingPortal, type Subscription } from "../../lib/billing";
 
 function formatDate(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
@@ -12,11 +12,11 @@ function statusLine(subscription: Subscription | null) {
     const trialEnd = formatDate(subscription.trial_end);
     return subscription.cancel_at_period_end
       ? `Free trial ends ${trialEnd}, then cancels`
-      : `Free trial until ${trialEnd}, then $5/month`;
+      : `Free trial until ${trialEnd}, then $${PRICE_MONTHLY}/month`;
   }
   if (subscription.status === "past_due") return "Payment failed. Update your card to keep access.";
   if (subscription.cancel_at_period_end) return `Cancels on ${periodEnd}`;
-  if (subscription.status === "active") return `$5/month, renews ${periodEnd}`;
+  if (subscription.status === "active") return `Renews ${periodEnd}`;
   return `Subscription ${subscription.status.replace("_", " ")}`;
 }
 

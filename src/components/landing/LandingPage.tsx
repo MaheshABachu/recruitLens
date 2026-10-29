@@ -2,13 +2,16 @@ import { useAuth } from "../../hooks/useAuth";
 import { useLandingStats } from "../../hooks/useLandingStats";
 import { ThemeToggle } from "../layout/ThemeToggle";
 import { GoogleIcon } from "../shared/GoogleIcon";
+import { Logo } from "../shared/Logo";
 import type { LandingStats } from "../../lib/landingStats";
+import { CHARITY, DONATION_SHARE, FREE_TRIAL_DAYS, PRICE_MONTHLY } from "../../lib/billing";
 
-// LeetCode Premium's monthly plan as of Oct 2026. Update here if it changes —
-// the receipt, comparison and savings line all derive from it.
-const LEETCODE_PREMIUM_MONTHLY = 35;
-const VANTAGE_MONTHLY = 5;
-const FREE_TRIAL_DAYS = 7;
+// LeetCode Premium's regular monthly price as of Oct 2026 (it's running a
+// discount right now; compare against the list price). Update here if it
+// changes — the receipt and savings line derive from it.
+const LEETCODE_PREMIUM_MONTHLY = 39;
+const DONATION_PER_MONTH = PRICE_MONTHLY * DONATION_SHARE;
+const DONATION_PERCENT = Math.round(DONATION_SHARE * 100);
 
 const FALLBACK_COMPANY_COUNT = 470;
 
@@ -64,22 +67,12 @@ function StartTrialButton({ className = "" }: { className?: string }) {
 export function LandingPage() {
   const { signInWithGoogle } = useAuth();
   const stats = useLandingStats();
-  const monthlySavings = LEETCODE_PREMIUM_MONTHLY - VANTAGE_MONTHLY;
+  const monthlySavings = LEETCODE_PREMIUM_MONTHLY - PRICE_MONTHLY;
 
   return (
     <div className="landing">
       <header className="landing__nav">
-        <div className="logo">
-          <span className="logo__mark" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2" />
-              <path d="M15.5 15.5L20.5 20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span className="logo__text">
-            Van<span className="logo__accent">tage</span>
-          </span>
-        </div>
+        <Logo />
         <div className="landing__nav-actions">
           <ThemeToggle />
           <button type="button" className="landing-btn landing-btn--ghost" onClick={signInWithGoogle}>
@@ -97,8 +90,8 @@ export function LandingPage() {
               So we made our own.
             </h1>
             <p className="landing-hero__lede">
-              Company-tagged interview questions and every new-grad job posting, in one place. ${VANTAGE_MONTHLY} a
-              month after a free week.
+              Company-tagged interview questions and every new-grad job posting, in one place. ${PRICE_MONTHLY} a
+              month after a free week, and {DONATION_PERCENT}% of it supports undocumented students in Central Texas.
             </p>
             <div className="landing-hero__ctas">
               <StartTrialButton />
@@ -119,7 +112,11 @@ export function LandingPage() {
               </div>
               <div className="landing-receipt__line">
                 <dt>Vantage</dt>
-                <dd>{formatDollars(VANTAGE_MONTHLY)}</dd>
+                <dd>{formatDollars(PRICE_MONTHLY)}</dd>
+              </div>
+              <div className="landing-receipt__line landing-receipt__line--muted landing-receipt__line--sub">
+                <dt>to {CHARITY.name}</dt>
+                <dd>{formatDollars(DONATION_PER_MONTH)}</dd>
               </div>
               <div className="landing-receipt__line landing-receipt__line--muted">
                 <dt>First {FREE_TRIAL_DAYS} days</dt>
@@ -134,7 +131,7 @@ export function LandingPage() {
               </span>
             </div>
             <figcaption className="landing-receipt__note">
-              LeetCode Premium monthly plan, October 2026.
+              LeetCode Premium monthly plan at its regular price, October 2026.
             </figcaption>
           </figure>
         </section>
@@ -244,11 +241,26 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="landing-cause">
+          <div className="landing-cause__copy">
+            <h2 className="landing-feature__title">
+              {DONATION_PERCENT}% of what we make goes to {CHARITY.name}.
+            </h2>
+            <p className="landing-feature__body">
+              Rooted is an immigrant collective in Austin, Texas that supports undocumented students across Central
+              Texas. Your subscription funds their work every month you stay.
+            </p>
+            <a className="landing-cause__link" href={CHARITY.url} target="_blank" rel="noreferrer">
+              Learn about Rooted
+            </a>
+          </div>
+        </section>
+
         <section className="landing-pricing" id="pricing">
           <h2 className="landing-pricing__title">One plan. Everything in it.</h2>
           <div className="landing-plan">
             <div className="landing-plan__price">
-              <span className="landing-plan__amount">${VANTAGE_MONTHLY}</span>
+              <span className="landing-plan__amount">${PRICE_MONTHLY}</span>
               <span className="landing-plan__period">per month</span>
             </div>
             <p className="landing-plan__trial">Your first {FREE_TRIAL_DAYS} days are free.</p>
@@ -259,7 +271,9 @@ export function LandingPage() {
               <li>The merged new-grad job feed, updated daily</li>
             </ul>
             <StartTrialButton className="landing-btn--block" />
-            <p className="landing-plan__fine">Cancel anytime.</p>
+            <p className="landing-plan__fine">
+              Cancel anytime. {DONATION_PERCENT}% of revenue goes to {CHARITY.name}.
+            </p>
           </div>
         </section>
       </main>

@@ -11,7 +11,7 @@ import {
 
 // Called from the frontend via supabase.functions.invoke("stripe-checkout",
 // { body: { action } }) — see src/lib/billing.ts.
-//   action "checkout" → Stripe Checkout URL for the $5/month plan, with a
+//   action "checkout" → Stripe Checkout URL for the $7/month plan, with a
 //                       7-day trial on the user's first subscription
 //   action "portal"   → Stripe Billing Portal URL (update card, cancel)
 // Deployed with verify_jwt: true, so the gateway already rejected anonymous

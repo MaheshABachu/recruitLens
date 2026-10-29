@@ -5,6 +5,18 @@ import { supabase } from "./supabase";
 // deployed without locking every user out.
 export const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
 
+// Display price. The amount Stripe actually charges is the price under the
+// vantage_monthly lookup key (scripts/setup-stripe.ts) — keep the two in sync.
+export const PRICE_MONTHLY = 7;
+export const FREE_TRIAL_DAYS = 7;
+
+// Share of revenue donated, and where it goes.
+export const DONATION_SHARE = 0.2;
+export const CHARITY = {
+  name: "Rooted Immigrant Collective",
+  url: "https://rootedimmigrantcollective.carrd.co/",
+};
+
 export type SubscriptionStatus =
   | "trialing"
   | "active"

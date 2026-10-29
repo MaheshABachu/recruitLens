@@ -7,11 +7,11 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // `supabase secrets set`): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
 // SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 
-// scripts/setup-stripe.ts creates the $5/month price under this lookup key.
+// scripts/setup-stripe.ts creates the $7/month price under this lookup key.
 // If it doesn't exist yet, checkout falls back to an inline price so the flow
 // still works end to end.
 export const PRICE_LOOKUP_KEY = "vantage_monthly";
-export const FALLBACK_PRICE = { currency: "usd", unit_amount: 500, product_name: "Vantage" };
+export const FALLBACK_PRICE = { currency: "usd", unit_amount: 700, product_name: "Vantage" };
 export const TRIAL_DAYS = 7;
 
 export const corsHeaders = {

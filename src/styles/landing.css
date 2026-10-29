@@ -746,3 +746,43 @@
 .landing-btn:disabled {
   opacity: 0.6;
 }
+
+/* ---------- Donation line + cause section ---------- */
+.landing-receipt__line--sub {
+  margin-top: -6px;
+  padding-left: 14px;
+  font-size: 12px;
+}
+
+.landing-cause {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: calc(var(--landing-max) + 2 * var(--landing-gutter));
+  margin: 0 auto;
+  padding: 120px var(--landing-gutter) 0;
+  text-align: center;
+}
+
+.landing-cause__copy {
+  max-width: 640px;
+}
+
+.landing-cause .landing-feature__body {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-cause__link {
+  display: inline-block;
+  margin-top: 20px;
+  color: var(--text);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+  .landing-cause {
+    padding-top: 88px;
+  }
+}
