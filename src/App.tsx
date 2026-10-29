@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Topbar } from "./components/layout/Topbar";
 import { JobsBoard } from "./components/jobs/JobsBoard";
 import { CompaniesBoard } from "./components/companies/CompaniesBoard";
-import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { LandingPage } from "./components/landing/LandingPage";
 import { Paywall } from "./components/billing/Paywall";
 import { SetPasswordScreen } from "./components/auth/SetPasswordScreen";
@@ -17,7 +16,6 @@ const TABS: Tab[] = ["Company Questions", "Jobs"];
 export default function App() {
   const { session, loading: authLoading, passwordRecovery, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("Company Questions");
-  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const userId = session?.user.id ?? null;
 
   const billing = useSubscription(BILLING_ENABLED ? userId : null);
@@ -43,9 +41,9 @@ export default function App() {
   return (
     <div className="app">
       <Topbar
-        onOpenSettings={() => setIsSettingsPanelOpen(true)}
         userEmail={session.user.email}
         onSignOut={signOut}
+        subscription={BILLING_ENABLED ? billing.subscription : undefined}
       />
 
       <nav className="tab-bar" aria-label="Sections">
@@ -68,13 +66,6 @@ export default function App() {
       {activeTab === "Company Questions" && <CompaniesBoard leetCode={leetCode} />}
 
       {activeTab === "Jobs" && <JobsBoard />}
-
-      {isSettingsPanelOpen && (
-        <SettingsPanel
-          onClose={() => setIsSettingsPanelOpen(false)}
-          subscription={BILLING_ENABLED ? billing.subscription : undefined}
-        />
-      )}
     </div>
   );
 }

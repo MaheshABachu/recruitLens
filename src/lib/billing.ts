@@ -43,6 +43,26 @@ export function hasAccess(subscription: Subscription | null) {
   return !!subscription?.status && ACCESS_STATUSES.has(subscription.status);
 }
 
+function formatDate(iso: string | null) {
+  return iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
+}
+
+// One-line summary for the account menu.
+export function subscriptionStatusLine(subscription: Subscription | null) {
+  if (!subscription?.status) return "No subscription";
+  const periodEnd = formatDate(subscription.current_period_end);
+  if (subscription.status === "trialing") {
+    const trialEnd = formatDate(subscription.trial_end);
+    return subscription.cancel_at_period_end
+      ? `Free trial ends ${trialEnd}, then cancels`
+      : `Free trial until ${trialEnd}, then $${PRICE_MONTHLY}/month`;
+  }
+  if (subscription.status === "past_due") return "Payment failed. Update your card to keep access.";
+  if (subscription.cancel_at_period_end) return `Cancels on ${periodEnd}`;
+  if (subscription.status === "active") return `Renews ${periodEnd}`;
+  return `Subscription ${subscription.status.replace("_", " ")}`;
+}
+
 // subscriptions is RLS-scoped to auth.uid() and written only by the
 // stripe-checkout / stripe-webhook Edge Functions.
 export async function getSubscription(): Promise<Subscription | null> {

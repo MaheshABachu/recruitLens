@@ -1,30 +1,22 @@
-import { ThemeToggle } from "./ThemeToggle";
-import { SettingsButton } from "./SettingsButton";
+import { AccountMenu } from "./AccountMenu";
 import { Logo } from "../shared/Logo";
+import type { Subscription } from "../../lib/billing";
 
 interface TopbarProps {
-  onOpenSettings: () => void;
   userEmail?: string | null;
   onSignOut: () => void;
+  // undefined when billing is disabled.
+  subscription?: Subscription | null;
 }
 
-export function Topbar({ onOpenSettings, userEmail, onSignOut }: TopbarProps) {
+export function Topbar({ userEmail, onSignOut, subscription }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar__left">
         <Logo size={20} />
       </div>
       <div className="topbar__right">
-        <SettingsButton onClick={onOpenSettings} />
-        <ThemeToggle />
-        {userEmail && (
-          <>
-            <span className="topbar__divider" aria-hidden="true" />
-            <button type="button" className="account-btn" onClick={onSignOut} title={userEmail}>
-              {userEmail[0]?.toUpperCase()}
-            </button>
-          </>
-        )}
+        <AccountMenu userEmail={userEmail} onSignOut={onSignOut} subscription={subscription} />
       </div>
     </header>
   );
