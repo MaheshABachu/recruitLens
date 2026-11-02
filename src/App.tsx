@@ -70,7 +70,14 @@ export default function App() {
         <CompaniesBoard leetCode={leetCode} selected={selectedCompany} onSelect={setSelectedCompany} />
       )}
 
-      {activeTab === "Jobs" && <JobsBoard />}
+      {activeTab === "Jobs" && (
+        <JobsBoard
+          onPrepCompany={(company) => {
+            setSelectedCompany(company);
+            setActiveTab("Company Questions");
+          }}
+        />
+      )}
     </div>
   );
 }
