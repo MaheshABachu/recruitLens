@@ -45,5 +45,7 @@ export function monogram(name: string) {
   const words = name.trim().split(/[\s\-_.&]+/).filter(Boolean);
   if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
   const word = words[0] ?? "?";
+  // Acronyms keep their capitals ("EY", "IBM" → "IB").
+  if (word.length > 1 && word === word.toUpperCase()) return word.slice(0, 2);
   return word[0].toUpperCase() + (word[1] ?? "").toLowerCase();
 }
