@@ -146,6 +146,22 @@ function isMdSeparatorRow(cells: string[]): boolean {
   return cells.every((c) => /^:?-+:?$/.test(c));
 }
 
+// The markdown lists write "↳" in the company column to mean "same company as
+// the row above". Carry the last real company forward instead of storing the
+// arrow as a company name.
+interface PreviousCompany {
+  company: string;
+  companyUrl: string | null;
+}
+
+function resolveCompany(company: string, companyUrl: string | null, previous: PreviousCompany): PreviousCompany {
+  const isContinuation = company === "" || /^↳/.test(company);
+  if (isContinuation && previous.company) return { ...previous };
+  previous.company = company;
+  previous.companyUrl = companyUrl;
+  return { company, companyUrl };
+}
+
 // --- jobright-ai/2026-Software-Engineer-New-Grad -------------------------
 
 async function fetchJobright(): Promise<RawPosting[]> {
@@ -161,15 +177,17 @@ async function fetchJobright(): Promise<RawPosting[]> {
   const lines = text.split("\n").filter((l) => l.trim().startsWith("|"));
 
   const postings: RawPosting[] = [];
+  const previous: PreviousCompany = { company: "", companyUrl: null };
   for (const line of lines) {
     const cells = splitMdRow(line);
     if (cells.length < 5 || isMdSeparatorRow(cells) || cells[0].toLowerCase() === "company") continue;
     const [companyCell, titleCell, location, workModel, dateCell] = cells;
     const jobUrl = mdLinkUrl(titleCell);
     if (!jobUrl) continue;
+    const { company, companyUrl } = resolveCompany(mdLinkText(companyCell), mdLinkUrl(companyCell), previous);
     postings.push({
-      company: mdLinkText(companyCell),
-      companyUrl: mdLinkUrl(companyCell),
+      company,
+      companyUrl,
       title: mdLinkText(titleCell),
       location: location || null,
       url: jobUrl,
@@ -204,6 +222,7 @@ async function fetchSpeedyapply(): Promise<RawPosting[]> {
   const lines = text.split("\n");
 
   const postings: RawPosting[] = [];
+  const previous: PreviousCompany = { company: "", companyUrl: null };
   let currentSection = "";
   for (const line of lines) {
     const heading = line.match(/^###\s+(.+)$/);
@@ -226,10 +245,11 @@ async function fetchSpeedyapply(): Promise<RawPosting[]> {
 
     const jobUrl = htmlAnchorHref(postingCell) ?? htmlAnchorHref(companyCell);
     if (!jobUrl) continue;
+    const { company, companyUrl } = resolveCompany(stripTags(companyCell), htmlAnchorHref(companyCell), previous);
 
     postings.push({
-      company: stripTags(companyCell),
-      companyUrl: htmlAnchorHref(companyCell),
+      company,
+      companyUrl,
       title: stripTags(title),
       location: location || null,
       url: jobUrl,
@@ -273,6 +293,12 @@ async function fetchSimplify(): Promise<RawPosting[]> {
     console.warn("  SimplifyJobs fetch failed, skipping source");
     return [];
   }
+  // `degrees` lists every degree a posting accepts (e.g. ["Bachelor's",
+  // "Master's"]), so it only *requires* an advanced degree when nothing below
+  // a Master's is accepted.
+  const requiresAdvancedDegree = (degrees: string[]) =>
+    degrees.length > 0 && !degrees.some((deg) => /bachelor|associate/i.test(deg));
+
   const data = (await res.json()) as SimplifyListing[];
   const active = data.filter((d) => d.active);
 
@@ -288,9 +314,10 @@ async function fetchSimplify(): Promise<RawPosting[]> {
       workModel: null,
       salary: null,
       requiresUsCitizenship: sponsorship.includes("citizen"),
-      noSponsorship: sponsorship.includes("does not sponsor") || sponsorship.includes("no sponsorship"),
+      // Simplify's wording is "Does Not Offer Sponsorship".
+      noSponsorship: /does not (offer )?sponsor|no sponsorship/.test(sponsorship),
       isFaang: false,
-      advancedDegreeRequired: (d.degrees ?? []).length > 0,
+      advancedDegreeRequired: requiresAdvancedDegree(d.degrees ?? []),
       isClosed: false,
       datePosted: d.date_posted ? toIsoDate(new Date(d.date_posted * 1000)) : null,
       source: "simplify",
