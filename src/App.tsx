@@ -10,16 +10,21 @@ import { useAuth } from "./hooks/useAuth";
 import { useSubscription } from "./hooks/useSubscription";
 import { BILLING_ENABLED } from "./lib/billing";
 
-type Tab = "Company Questions" | "Jobs";
-const TABS: Tab[] = ["Company Questions", "Jobs"];
+type Tab = "Company Questions" | "Jobs" | "Internships";
+const TABS: Tab[] = ["Company Questions", "Jobs", "Internships"];
 
 export default function App() {
   const { session, loading: authLoading, passwordRecovery, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("Company Questions");
   // The company picked on the Company Questions tab. Lives here so the Jobs
-  // tab can jump straight to a company's questions.
+  // and Internships tabs can jump straight to a company's questions.
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const userId = session?.user.id ?? null;
+
+  function prepCompany(company: string) {
+    setSelectedCompany(company);
+    setActiveTab("Company Questions");
+  }
 
   const billing = useSubscription(BILLING_ENABLED ? userId : null);
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
@@ -70,13 +75,10 @@ export default function App() {
         <CompaniesBoard leetCode={leetCode} selected={selectedCompany} onSelect={setSelectedCompany} />
       )}
 
-      {activeTab === "Jobs" && (
-        <JobsBoard
-          onPrepCompany={(company) => {
-            setSelectedCompany(company);
-            setActiveTab("Company Questions");
-          }}
-        />
+      {activeTab === "Jobs" && <JobsBoard key="jobs" kind="jobs" title="Jobs" onPrepCompany={prepCompany} />}
+
+      {activeTab === "Internships" && (
+        <JobsBoard key="internships" kind="internships" title="Internships" onPrepCompany={prepCompany} />
       )}
     </div>
   );

@@ -20,6 +20,13 @@ interface RawJobPostingRow {
   sources: string[];
 }
 
+export type PostingKind = "jobs" | "internships";
+
+const TABLE_BY_KIND: Record<PostingKind, string> = {
+  jobs: "job_postings",
+  internships: "internship_postings",
+};
+
 const PAGE_SIZE = 1000;
 
 // PostgREST caps each response at PAGE_SIZE rows — this pages through active
@@ -29,12 +36,12 @@ const PAGE_SIZE = 1000;
 // same-day postings), and without a unique tiebreaker Postgres is free to
 // return ties in a different order per page request, causing rows to be
 // skipped or duplicated across the .range() window boundaries.
-async function fetchAllActivePostingRows(): Promise<RawJobPostingRow[]> {
+async function fetchAllActivePostingRows(kind: PostingKind): Promise<RawJobPostingRow[]> {
   const rows: RawJobPostingRow[] = [];
   let from = 0;
   for (;;) {
     const { data, error } = await supabase
-      .from("job_postings")
+      .from(TABLE_BY_KIND[kind])
       .select(
         "id, company, company_url, title, location, url, category, work_model, salary, requires_us_citizenship, no_sponsorship, is_faang, advanced_degree_required, is_closed, date_posted, sources",
       )
@@ -51,12 +58,12 @@ async function fetchAllActivePostingRows(): Promise<RawJobPostingRow[]> {
   return rows;
 }
 
-export async function getJobPostings(): Promise<JobPosting[]> {
+export async function getJobPostings(kind: PostingKind): Promise<JobPosting[]> {
   let rows: RawJobPostingRow[];
   try {
-    rows = await fetchAllActivePostingRows();
+    rows = await fetchAllActivePostingRows(kind);
   } catch (error) {
-    console.error("Failed to load job postings:", error);
+    console.error(`Failed to load ${kind} postings:`, error);
     return [];
   }
 

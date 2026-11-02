@@ -5,6 +5,7 @@ import { useCompanyStats } from "../../hooks/useCompanyStats";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { JobRow, daysSince } from "./JobRow";
 import type { JobPosting } from "../../types/jobPosting";
+import type { PostingKind } from "../../lib/jobPostings";
 
 type SortBy = "date" | "company";
 
@@ -47,12 +48,14 @@ function filterClass(isActive: boolean) {
 }
 
 interface JobsBoardProps {
+  kind: PostingKind;
+  title: string;
   // Opens a company on the Company Questions tab.
   onPrepCompany: (company: string) => void;
 }
 
-export function JobsBoard({ onPrepCompany }: JobsBoardProps) {
-  const { postings, loading } = useJobPostings();
+export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
+  const { postings, loading } = useJobPostings(kind);
   const { companies: bankCompanies } = useLcCompanies();
 
   const [search, setSearch] = useState("");
@@ -186,7 +189,7 @@ export function JobsBoard({ onPrepCompany }: JobsBoardProps) {
   return (
     <main className="jobs-board">
       <div className="jobs-board__header">
-        <h1 className="jobs-board__title">Jobs</h1>
+        <h1 className="jobs-board__title">{title}</h1>
         {!loading && (
           <p className="jobs-board__summary">
             <span>
