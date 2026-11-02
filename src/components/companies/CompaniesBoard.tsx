@@ -59,10 +59,17 @@ function CheckIcon() {
   );
 }
 
-export function CompaniesBoard({ leetCode }: { leetCode: LeetCodeSyncState }) {
+interface CompaniesBoardProps {
+  leetCode: LeetCodeSyncState;
+  // Lifted into App so the Jobs tab's "Prep" chips can open a company here,
+  // and so the pick survives switching tabs.
+  selected: string | null;
+  onSelect: (company: string | null) => void;
+}
+
+export function CompaniesBoard({ leetCode, selected, onSelect: setSelected }: CompaniesBoardProps) {
   const solvedVersion = leetCode.lastChangedAt;
   const { companies, loading: companiesLoading } = useLcCompanies();
-  const [selected, setSelected] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<QuestionTimeWindow>("all_time");
 
   const { questions, loading: questionsLoading } = useCompanyQuestions(selected ?? undefined);

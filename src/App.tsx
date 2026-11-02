@@ -16,6 +16,9 @@ const TABS: Tab[] = ["Company Questions", "Jobs"];
 export default function App() {
   const { session, loading: authLoading, passwordRecovery, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("Company Questions");
+  // The company picked on the Company Questions tab. Lives here so the Jobs
+  // tab can jump straight to a company's questions.
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const userId = session?.user.id ?? null;
 
   const billing = useSubscription(BILLING_ENABLED ? userId : null);
@@ -63,7 +66,9 @@ export default function App() {
         })}
       </nav>
 
-      {activeTab === "Company Questions" && <CompaniesBoard leetCode={leetCode} />}
+      {activeTab === "Company Questions" && (
+        <CompaniesBoard leetCode={leetCode} selected={selectedCompany} onSelect={setSelectedCompany} />
+      )}
 
       {activeTab === "Jobs" && <JobsBoard />}
     </div>
