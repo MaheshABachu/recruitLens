@@ -1,4 +1,4 @@
-name: Sync job postings
+name: Sync job and internship postings
 
 # Every 30 minutes (GitHub Actions cron is UTC; minute-level cadence makes
 # the DST offset irrelevant). Scheduled runs can be delayed or dropped under
@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Import job postings
+      - name: Import job and internship postings
         run: npm run import:job-postings
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

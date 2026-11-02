@@ -1,9 +1,10 @@
-// Daily sync: pulls new-grad postings from three GitHub-hosted job lists into
-// `job_postings`, deduped across sources by apply-link (url_key, a generated
-// column). Run manually via `npm run import:job-postings`, or scheduled by
-// .github/workflows/sync-jobs.yml. Safe to re-run — every write upserts on
-// the url_key conflict target, and postings no longer seen in any source are
-// soft-deleted (is_active = false), never hard-deleted.
+// Scheduled sync: pulls new-grad postings into `job_postings` and internships
+// into `internship_postings`, each from three GitHub-hosted lists and deduped
+// across sources by apply-link (url_key, a generated column). Run manually via
+// `npm run import:job-postings`, or scheduled by .github/workflows/sync-jobs.yml.
+// Safe to re-run — every write upserts on the url_key conflict target, and
+// postings no longer seen in any source are soft-deleted (is_active = false),
+// never hard-deleted.
 
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -36,6 +37,65 @@ interface RawPosting {
   isClosed: boolean;
   datePosted: string | null; // ISO yyyy-mm-dd
   source: "jobright" | "speedyapply" | "simplify";
+}
+
+interface Feed {
+  table: "job_postings" | "internship_postings";
+  jobrightUrl: string;
+  speedyapplyUrl: string;
+  simplifyUrl: string;
+  keepListing?: (listing: SimplifyListing) => boolean;
+  categoryAliases?: Record<string, string>;
+}
+
+const FEEDS: Feed[] = [
+  {
+    table: "job_postings",
+    jobrightUrl: "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-New-Grad/master/README.md",
+    speedyapplyUrl: "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+    simplifyUrl: "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
+  },
+  {
+    table: "internship_postings",
+    jobrightUrl: "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-Internship/master/README.md",
+    speedyapplyUrl: "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/README.md",
+    simplifyUrl: "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+    keepListing: (listing) => !allTermsEnded(listing.terms ?? [], new Date()),
+    // Simplify has a few listings under older names for the same categories.
+    categoryAliases: {
+      "Software Engineering": "Software",
+      "Data Science, AI & Machine Learning": "AI/ML/Data",
+      "Product Management": "Product",
+    },
+  },
+];
+
+// Last day of each term, as [month index, day, years after the term's year].
+// "Winter 2026" could mean either end of 2026, so it gets the later reading.
+const TERM_ENDS: Record<string, [number, number, number]> = {
+  spring: [4, 31, 0],
+  summer: [7, 31, 0],
+  fall: [11, 31, 0],
+  winter: [2, 31, 1],
+};
+
+// True only when a listing names at least one term and every named term is
+// over. Listings with no parseable term ("N/A", or none) are kept.
+function allTermsEnded(terms: string[], now: Date): boolean {
+  const ends = terms.flatMap((term) => {
+    const match = term.trim().match(/^(spring|summer|fall|winter)\s+(\d{4})$/i);
+    if (!match) return [];
+    const [month, day, yearOffset] = TERM_ENDS[match[1].toLowerCase()];
+    return [new Date(Date.UTC(Number(match[2]) + yearOffset, month, day, 23, 59, 59))];
+  });
+  return ends.length > 0 && ends.every((end) => end.getTime() < now.getTime());
+}
+
+// `failed` is separate from an empty list so a failed fetch can't be mistaken
+// for a source that has dropped all of its postings.
+interface SourceResult {
+  postings: RawPosting[];
+  failed: boolean;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -162,16 +222,14 @@ function resolveCompany(company: string, companyUrl: string | null, previous: Pr
   return { company, companyUrl };
 }
 
-// --- jobright-ai/2026-Software-Engineer-New-Grad -------------------------
+// --- jobright-ai lists -----------------------------------------------------
 
-async function fetchJobright(): Promise<RawPosting[]> {
-  console.log("Fetching jobright-ai list...");
-  const res = await fetchWithRetry(
-    "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-New-Grad/master/README.md",
-  );
+async function fetchJobright(feed: Feed): Promise<SourceResult> {
+  console.log(`Fetching jobright-ai list for ${feed.table}...`);
+  const res = await fetchWithRetry(feed.jobrightUrl);
   if (!res) {
     console.warn("  jobright fetch failed, skipping source");
-    return [];
+    return { postings: [], failed: true };
   }
   const text = await res.text();
   const lines = text.split("\n").filter((l) => l.trim().startsWith("|"));
@@ -204,19 +262,17 @@ async function fetchJobright(): Promise<RawPosting[]> {
     });
   }
   console.log(`  parsed ${postings.length} jobright postings`);
-  return postings;
+  return { postings, failed: false };
 }
 
-// --- speedyapply/2027-SWE-College-Jobs (NEW_GRAD_USA.md) -----------------
+// --- speedyapply/2027-SWE-College-Jobs (NEW_GRAD_USA.md, README.md) --------
 
-async function fetchSpeedyapply(): Promise<RawPosting[]> {
-  console.log("Fetching speedyapply list...");
-  const res = await fetchWithRetry(
-    "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
-  );
+async function fetchSpeedyapply(feed: Feed): Promise<SourceResult> {
+  console.log(`Fetching speedyapply list for ${feed.table}...`);
+  const res = await fetchWithRetry(feed.speedyapplyUrl);
   if (!res) {
     console.warn("  speedyapply fetch failed, skipping source");
-    return [];
+    return { postings: [], failed: true };
   }
   const text = await res.text();
   const lines = text.split("\n");
@@ -266,10 +322,10 @@ async function fetchSpeedyapply(): Promise<RawPosting[]> {
     });
   }
   console.log(`  parsed ${postings.length} speedyapply postings`);
-  return postings;
+  return { postings, failed: false };
 }
 
-// --- SimplifyJobs/New-Grad-Positions (structured listings.json) ----------
+// --- SimplifyJobs lists (structured listings.json) -------------------------
 
 interface SimplifyListing {
   category: string;
@@ -282,16 +338,15 @@ interface SimplifyListing {
   company_url: string | null;
   sponsorship: string | null;
   degrees: string[];
+  terms?: string[];
 }
 
-async function fetchSimplify(): Promise<RawPosting[]> {
-  console.log("Fetching SimplifyJobs listings.json (large file)...");
-  const res = await fetchWithRetry(
-    "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
-  );
+async function fetchSimplify(feed: Feed): Promise<SourceResult> {
+  console.log(`Fetching SimplifyJobs listings.json for ${feed.table} (large file)...`);
+  const res = await fetchWithRetry(feed.simplifyUrl);
   if (!res) {
     console.warn("  SimplifyJobs fetch failed, skipping source");
-    return [];
+    return { postings: [], failed: true };
   }
   // `degrees` lists every degree a posting accepts (e.g. ["Bachelor's",
   // "Master's"]), so it only *requires* an advanced degree when nothing below
@@ -300,7 +355,7 @@ async function fetchSimplify(): Promise<RawPosting[]> {
     degrees.length > 0 && !degrees.some((deg) => /bachelor|associate/i.test(deg));
 
   const data = (await res.json()) as SimplifyListing[];
-  const active = data.filter((d) => d.active);
+  const active = data.filter((d) => d.active && (feed.keepListing?.(d) ?? true));
 
   const postings: RawPosting[] = active.map((d) => {
     const sponsorship = (d.sponsorship ?? "").toLowerCase();
@@ -310,7 +365,7 @@ async function fetchSimplify(): Promise<RawPosting[]> {
       title: d.title,
       location: d.locations?.length ? d.locations.join("; ") : null,
       url: d.url,
-      category: d.category || null,
+      category: (feed.categoryAliases?.[d.category] ?? d.category) || null,
       workModel: null,
       salary: null,
       requiresUsCitizenship: sponsorship.includes("citizen"),
@@ -324,7 +379,7 @@ async function fetchSimplify(): Promise<RawPosting[]> {
     };
   });
   console.log(`  parsed ${postings.length} active SimplifyJobs postings`);
-  return postings;
+  return { postings, failed: false };
 }
 
 // --- merge + upsert --------------------------------------------------------
@@ -360,16 +415,17 @@ function mergePostings(all: RawPosting[]): Map<string, MergedPosting> {
   return merged;
 }
 
-async function fetchAllExisting(): Promise<{ url_key: string; sources: string[]; is_active: boolean }[]> {
+async function fetchAllExisting(table: Feed["table"]): Promise<{ url_key: string; sources: string[]; is_active: boolean }[]> {
   const rows: { url_key: string; sources: string[]; is_active: boolean }[] = [];
   let from = 0;
   const pageSize = 1000;
   for (;;) {
     const { data, error } = await supabase
-      .from("job_postings")
+      .from(table)
       .select("url_key, sources, is_active")
+      .order("url_key")
       .range(from, from + pageSize - 1);
-    if (error) throw new Error(`job_postings fetch failed: ${error.message}`);
+    if (error) throw new Error(`${table} fetch failed: ${error.message}`);
     rows.push(...((data ?? []) as { url_key: string; sources: string[]; is_active: boolean }[]));
     if (!data || data.length < pageSize) break;
     from += pageSize;
@@ -377,12 +433,12 @@ async function fetchAllExisting(): Promise<{ url_key: string; sources: string[];
   return rows;
 }
 
-async function main() {
-  const [jobright, speedyapply, simplify] = await Promise.all([fetchJobright(), fetchSpeedyapply(), fetchSimplify()]);
-  const merged = mergePostings([...jobright, ...speedyapply, ...simplify]);
+async function syncFeed(feed: Feed) {
+  const results = await Promise.all([fetchJobright(feed), fetchSpeedyapply(feed), fetchSimplify(feed)]);
+  const merged = mergePostings(results.flatMap((r) => r.postings));
   console.log(`Merged into ${merged.size} unique postings by link.`);
 
-  const existing = await fetchAllExisting();
+  const existing = await fetchAllExisting(feed.table);
   const existingByUrlKey = new Map(existing.map((r) => [r.url_key, r]));
   const nowIso = new Date().toISOString();
 
@@ -411,23 +467,45 @@ async function main() {
     };
   });
 
-  console.log("Upserting job_postings...");
+  console.log(`Upserting ${feed.table}...`);
   for (const batch of chunk(rows, CHUNK_SIZE)) {
-    const { error } = await supabase.from("job_postings").upsert(batch, { onConflict: "url_key" });
-    if (error) throw new Error(`job_postings upsert failed: ${error.message}`);
+    const { error } = await supabase.from(feed.table).upsert(batch, { onConflict: "url_key" });
+    if (error) throw new Error(`${feed.table} upsert failed: ${error.message}`);
   }
 
-  const staleUrlKeys = existing.filter((r) => r.is_active && !merged.has(r.url_key)).map((r) => r.url_key);
-  console.log(`Marking ${staleUrlKeys.length} stale postings inactive...`);
-  for (const batch of chunkByCharBudget(staleUrlKeys, 4000)) {
-    const { error } = await supabase
-      .from("job_postings")
-      .update({ is_active: false, updated_at: nowIso })
-      .in("url_key", batch);
-    if (error) throw new Error(`job_postings stale-mark failed: ${error.message}`);
+  // A posting missing from this run may only be missing because its source
+  // couldn't be fetched, so leave everything active until a complete run.
+  const sourceFailed = results.some((r) => r.failed);
+  if (sourceFailed) {
+    console.warn("A source failed to fetch, skipping the stale pass this run.");
+  } else {
+    const staleUrlKeys = existing.filter((r) => r.is_active && !merged.has(r.url_key)).map((r) => r.url_key);
+    console.log(`Marking ${staleUrlKeys.length} stale postings inactive...`);
+    for (const batch of chunkByCharBudget(staleUrlKeys, 4000)) {
+      const { error } = await supabase
+        .from(feed.table)
+        .update({ is_active: false, updated_at: nowIso })
+        .in("url_key", batch);
+      if (error) throw new Error(`${feed.table} stale-mark failed: ${error.message}`);
+    }
   }
 
-  console.log(`Done. Upserted ${rows.length} postings.`);
+  console.log(`Done. Upserted ${rows.length} postings into ${feed.table}.`);
+}
+
+// Feeds run independently: one failing doesn't stop the other, but the exit
+// code still turns the Action red.
+async function main() {
+  let anyFailed = false;
+  for (const feed of FEEDS) {
+    try {
+      await syncFeed(feed);
+    } catch (err) {
+      anyFailed = true;
+      console.error(`${feed.table} sync failed:`, err);
+    }
+  }
+  if (anyFailed) process.exit(1);
 }
 
 main().catch((err) => {
