@@ -8,6 +8,8 @@ interface AccountMenuProps {
   onSignOut: () => void;
   // undefined when billing is disabled — hides "Manage billing" entirely.
   subscription?: Subscription | null;
+  // Replays the onboarding tour.
+  onStartTour?: () => void;
 }
 
 const THEMES: { value: Theme; label: string }[] = [
@@ -17,7 +19,7 @@ const THEMES: { value: Theme; label: string }[] = [
 
 // The avatar in the top-right corner. Opens a dropdown with the theme switch,
 // Manage billing (Stripe Billing Portal) and Sign out.
-export function AccountMenu({ userEmail, onSignOut, subscription }: AccountMenuProps) {
+export function AccountMenu({ userEmail, onSignOut, subscription, onStartTour }: AccountMenuProps) {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [openingBilling, setOpeningBilling] = useState(false);
@@ -62,6 +64,7 @@ export function AccountMenu({ userEmail, onSignOut, subscription }: AccountMenuP
         ref={buttonRef}
         type="button"
         className="account-btn"
+        data-tour="account"
         aria-label="Account"
         aria-expanded={open}
         aria-controls={menuId}
@@ -114,6 +117,18 @@ export function AccountMenu({ userEmail, onSignOut, subscription }: AccountMenuP
           )}
 
           <div className="account-menu__section account-menu__section--stacked">
+            {onStartTour && (
+              <button
+                type="button"
+                className="account-menu__item"
+                onClick={() => {
+                  setOpen(false);
+                  onStartTour();
+                }}
+              >
+                Take the tour
+              </button>
+            )}
             <button type="button" className="account-menu__item" onClick={onSignOut}>
               Sign out
             </button>

@@ -25,7 +25,7 @@ export function LeetCodeSync({ leetCode }: { leetCode: LeetCodeSyncState }) {
       connect(input);
     };
     return (
-      <form className="leetcode-sync" onSubmit={handleSubmit}>
+      <form className="leetcode-sync" onSubmit={handleSubmit} data-tour="leetcode">
         <input
           className="leetcode-sync__input"
           type="text"
@@ -53,7 +53,7 @@ export function LeetCodeSync({ leetCode }: { leetCode: LeetCodeSyncState }) {
   const showBreakdown = status === "connected" && !!stats;
 
   return (
-    <div className="leetcode-sync">
+    <div className="leetcode-sync" data-tour="leetcode">
       <div
         className="leetcode-sync__account"
         // Focusable when there's a breakdown so keyboard users can reveal it too.

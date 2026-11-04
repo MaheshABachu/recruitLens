@@ -123,7 +123,7 @@ export function FeaturedCompanies({ companies, pinned, selected, onSelect, stats
   const compact = !!selected;
 
   return (
-    <div className={`featured-companies ${compact ? "featured-companies--compact" : ""}`}>
+    <div className={`featured-companies ${compact ? "featured-companies--compact" : ""}`} data-tour="featured">
       {tiles.map((name) => {
         const isActive = name === selected;
         const isPinned = pinSet.has(name);

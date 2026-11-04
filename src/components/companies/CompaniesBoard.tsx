@@ -134,7 +134,7 @@ export function CompaniesBoard({ leetCode, selected, onSelect: setSelected }: Co
 
         <LeetCodeSync leetCode={leetCode} />
 
-        <div className="companies-board__controls">
+        <div className="companies-board__controls" data-tour="picker">
           <CompanyPicker companies={companies} selected={selected} onSelect={setSelected} />
         </div>
       </div>

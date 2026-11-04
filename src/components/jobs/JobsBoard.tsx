@@ -254,7 +254,7 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
         </select>
       </div>
 
-      <div className="jobs-board__toggles">
+      <div className="jobs-board__toggles" data-tour="job-toggles">
         {workModels.length > 0 && (
           <div className="jobs-board__segmented" role="group" aria-label="Work model">
             {[ALL, ...workModels].map((value) => (

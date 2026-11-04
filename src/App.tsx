@@ -5,7 +5,9 @@ import { CompaniesBoard } from "./components/companies/CompaniesBoard";
 import { LandingPage } from "./components/landing/LandingPage";
 import { Paywall } from "./components/billing/Paywall";
 import { SetPasswordScreen } from "./components/auth/SetPasswordScreen";
+import { OnboardingTour } from "./components/onboarding/OnboardingTour";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
+import { useOnboarding } from "./hooks/useOnboarding";
 import { useAuth } from "./hooks/useAuth";
 import { useSubscription } from "./hooks/useSubscription";
 import { BILLING_ENABLED } from "./lib/billing";
@@ -30,6 +32,15 @@ export default function App() {
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
 
   const leetCode = useLeetCodeSync(isLockedOut ? null : userId);
+  const onboarding = useOnboarding(isLockedOut || passwordRecovery ? null : userId);
+
+  // The tour points at the Company Questions landing view, so replaying it
+  // from another tab (or with a company open) goes back there first.
+  function startTour() {
+    setActiveTab("Company Questions");
+    setSelectedCompany(null);
+    onboarding.startTour();
+  }
 
   if (authLoading) return null;
   if (!session) return <LandingPage />;
@@ -52,9 +63,12 @@ export default function App() {
         userEmail={session.user.email}
         onSignOut={signOut}
         subscription={BILLING_ENABLED ? billing.subscription : undefined}
+        onStartTour={startTour}
       />
 
-      <nav className="tab-bar" aria-label="Sections">
+      <OnboardingTour active={onboarding.showTour} onDone={onboarding.finishTour} onShowTab={setActiveTab} />
+
+      <nav className="tab-bar" aria-label="Sections" data-tour="tabs">
         {TABS.map((tab) => {
           const isActive = tab === activeTab;
           return (

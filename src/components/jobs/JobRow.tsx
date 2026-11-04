@@ -34,7 +34,7 @@ export function JobRow({ posting, prepCompany, prepCount, onPrep }: JobRowProps)
   const isNew = days !== null && days <= NEW_WITHIN_DAYS;
 
   return (
-    <li className="jobs-board__row" style={{ "--row-hue": companyHueVar(posting.company) } as CSSProperties}>
+    <li className="jobs-board__row" data-tour="job-row" style={{ "--row-hue": companyHueVar(posting.company) } as CSSProperties}>
       <CompanyMonogram name={posting.company} />
 
       <div className="jobs-board__row-main">
@@ -79,6 +79,7 @@ export function JobRow({ posting, prepCompany, prepCount, onPrep }: JobRowProps)
             <button
               type="button"
               className="jobs-board__prep"
+              data-tour="prep"
               onClick={() => onPrep(prepCompany)}
               title={`Open ${prepCompany} in Company Questions`}
             >

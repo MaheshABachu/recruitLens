@@ -17,7 +17,7 @@ export function TrendingQuestions({ solvedSlugs, onSelectCompany }: TrendingQues
   if (questions && questions.length === 0) return null;
 
   return (
-    <section className="trending" aria-labelledby="trending-title">
+    <section className="trending" aria-labelledby="trending-title" data-tour="trending">
       <div className="trending__header">
         <h2 id="trending-title" className="trending__title">
           Asked the most this month
