@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { openBillingPortal, subscriptionStatusLine, type Subscription } from "../../lib/billing";
 import type { Theme } from "../../context/ThemeContext";
+import { LOGOS_ENABLED } from "../../lib/companyLogos";
 
 interface AccountMenuProps {
   userEmail: string | null | undefined;
@@ -133,6 +134,12 @@ export function AccountMenu({ userEmail, onSignOut, subscription, onStartTour }:
               Sign out
             </button>
           </div>
+
+          {LOGOS_ENABLED && (
+            <a className="account-menu__credit" href="https://logo.dev" target="_blank" rel="noreferrer">
+              Logos provided by Logo.dev
+            </a>
+          )}
         </div>
       )}
     </div>
