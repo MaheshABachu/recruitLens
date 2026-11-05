@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
-import { getSubscription, hasAccess, type Subscription } from "../lib/billing";
+import { useEffect, useMemo, useState } from "react";
+import { getSubscription, hasAccess, trialEndsAt, type Subscription } from "../lib/billing";
 
 const CHECKOUT_POLL_MS = 2000;
 const CHECKOUT_POLL_TRIES = 15;
 
+// accountCreatedAt starts the in-app free trial (FREE_TRIAL_DAYS): access
+// until it ends even with no subscription, then the paywall.
+//
 // Pass null to disable (billing off, or signed out) — returns no access and
 // never fetches.
 //
 // After Stripe Checkout redirects back with ?checkout=success, the webhook
 // that writes the subscriptions row can land a few seconds later, so this
 // polls until access appears (or gives up after ~30s) before showing the app.
-export function useSubscription(userId: string | null) {
+export function useSubscription(userId: string | null, accountCreatedAt?: string) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   // Which user the current `subscription` belongs to. Deriving `loading` from
   // this (instead of a flag set inside the effect) means there's no render
@@ -57,6 +60,29 @@ export function useSubscription(userId: string | null) {
     };
   }, [userId]);
 
+  const trialEnd = useMemo(() => trialEndsAt(accountCreatedAt), [accountCreatedAt]);
+  const [trialActive, setTrialActive] = useState(() => !!trialEnd && trialEnd.getTime() > Date.now());
+
+  // Flip to the paywall the moment the trial runs out, not on next reload.
+  useEffect(() => {
+    const remaining = trialEnd ? trialEnd.getTime() - Date.now() : 0;
+    setTrialActive(remaining > 0);
+    // setTimeout overflows past ~24.8 days; a trial is far shorter.
+    if (remaining <= 0 || remaining > 2 ** 31 - 1) return;
+    const timer = window.setTimeout(() => setTrialActive(false), remaining);
+    return () => window.clearTimeout(timer);
+  }, [trialEnd]);
+
   const loading = userId !== null && loadedFor !== userId;
-  return { subscription, hasAccess: !loading && hasAccess(subscription), loading, confirmingCheckout };
+  const subscribed = hasAccess(subscription);
+  return {
+    subscription,
+    // Trial access doesn't wait on the subscription fetch.
+    hasAccess: (userId !== null && trialActive) || (!loading && subscribed),
+    // Still in the free trial with no subscription — the account menu offers plans.
+    inFreeTrial: trialActive && !subscribed,
+    trialEnd,
+    loading,
+    confirmingCheckout,
+  };
 }

@@ -9,6 +9,10 @@ interface AccountMenuProps {
   onSignOut: () => void;
   // undefined when billing is disabled — hides "Manage billing" entirely.
   subscription?: Subscription | null;
+  // In-app free trial end (null when not in one) and the "Choose a plan"
+  // action shown in place of Manage billing while it runs.
+  trialEnd?: Date | null;
+  onChoosePlan?: () => void;
   // Replays the onboarding tour.
   onStartTour?: () => void;
 }
@@ -20,7 +24,14 @@ const THEMES: { value: Theme; label: string }[] = [
 
 // The avatar in the top-right corner. Opens a dropdown with the theme switch,
 // Manage billing (Stripe Billing Portal) and Sign out.
-export function AccountMenu({ userEmail, onSignOut, subscription, onStartTour }: AccountMenuProps) {
+export function AccountMenu({
+  userEmail,
+  onSignOut,
+  subscription,
+  trialEnd = null,
+  onChoosePlan,
+  onStartTour,
+}: AccountMenuProps) {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [openingBilling, setOpeningBilling] = useState(false);
@@ -100,15 +111,28 @@ export function AccountMenu({ userEmail, onSignOut, subscription, onStartTour }:
 
           {subscription !== undefined && (
             <div className="account-menu__section account-menu__section--stacked">
-              <button
-                type="button"
-                className="account-menu__item"
-                onClick={handleManageBilling}
-                disabled={openingBilling || !subscription?.status}
-              >
-                {openingBilling ? "Opening billing…" : "Manage billing"}
-              </button>
-              <span className="account-menu__hint">{subscriptionStatusLine(subscription)}</span>
+              {onChoosePlan ? (
+                <button
+                  type="button"
+                  className="account-menu__item"
+                  onClick={() => {
+                    setOpen(false);
+                    onChoosePlan();
+                  }}
+                >
+                  Choose a plan
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="account-menu__item"
+                  onClick={handleManageBilling}
+                  disabled={openingBilling || !subscription?.status}
+                >
+                  {openingBilling ? "Opening billing…" : "Manage billing"}
+                </button>
+              )}
+              <span className="account-menu__hint">{subscriptionStatusLine(subscription, trialEnd)}</span>
               {billingError && (
                 <span className="account-menu__error" role="alert">
                   {billingError}

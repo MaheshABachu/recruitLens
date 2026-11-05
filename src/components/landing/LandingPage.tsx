@@ -5,7 +5,15 @@ import { Logo } from "../shared/Logo";
 import { AuthDialog } from "../auth/AuthDialog";
 import type { AuthMode } from "../auth/AuthForm";
 import type { LandingStats } from "../../lib/landingStats";
-import { CHARITY, DONATION_SHARE, FREE_TRIAL_DAYS, PRICE_MONTHLY } from "../../lib/billing";
+import {
+  CHARITY,
+  DONATION_SHARE,
+  FREE_TRIAL_DAYS,
+  PLANS,
+  PRICE_MONTHLY,
+  formatPerMonth,
+  planSavingsPercent,
+} from "../../lib/billing";
 
 // LeetCode Premium's regular monthly price as of Oct 2026 (it's running a
 // discount right now; compare against the list price). Update here if it
@@ -85,12 +93,13 @@ export function LandingPage() {
               So we made our own.
             </h1>
             <p className="landing-hero__lede">
-              Company-tagged interview questions and every new-grad job posting, in one place. ${PRICE_MONTHLY} a
-              month after a free week, and {DONATION_PERCENT}% of it supports undocumented students in Central Texas.
+              Company-tagged interview questions and every new-grad job posting, in one place. Free for{" "}
+              {FREE_TRIAL_DAYS} days with no card, then ${PRICE_MONTHLY} a month, and {DONATION_PERCENT}% of it supports
+              undocumented students in Central Texas.
             </p>
             <div className="landing-hero__ctas">
               <button type="button" className="landing-btn landing-btn--primary" onClick={openSignUp}>
-                Start your free week
+                Try it free for {FREE_TRIAL_DAYS} days
               </button>
               <a className="landing-btn landing-btn--ghost" href="#pricing">
                 See what's included
@@ -254,13 +263,24 @@ export function LandingPage() {
         </section>
 
         <section className="landing-pricing" id="pricing">
-          <h2 className="landing-pricing__title">One plan. Everything in it.</h2>
+          <h2 className="landing-pricing__title">Every feature, on every plan.</h2>
           <div className="landing-plan">
-            <div className="landing-plan__price">
-              <span className="landing-plan__amount">${PRICE_MONTHLY}</span>
-              <span className="landing-plan__period">per month</span>
+            <div className="plan-picker">
+              {PLANS.map((plan) => {
+                const savings = planSavingsPercent(plan);
+                return (
+                  <div key={plan.id} className="plan-picker__option plan-picker__option--static">
+                    <span className="plan-picker__label">{plan.label}</span>
+                    <span className="plan-picker__price">${plan.price}</span>
+                    <span className="plan-picker__meta">
+                      {plan.months > 1 ? formatPerMonth(plan) : plan.period}
+                      {savings > 0 && <span className="plan-picker__save">Save {savings}%</span>}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <p className="landing-plan__trial">Your first {FREE_TRIAL_DAYS} days are free.</p>
+            <p className="landing-plan__trial">Your first {FREE_TRIAL_DAYS} days are free. No card needed.</p>
             <ul className="landing-list landing-list--plan">
               <li>Company-tagged questions for {(stats.companies ?? FALLBACK_COMPANY_COUNT).toLocaleString()} companies</li>
               <li>Frequency by time window and topic filters</li>
@@ -268,7 +288,7 @@ export function LandingPage() {
               <li>The merged new-grad job feed, updated daily</li>
             </ul>
             <button type="button" className="landing-btn landing-btn--primary landing-btn--block" onClick={openSignUp}>
-              Start your free week
+              Try it free for {FREE_TRIAL_DAYS} days
             </button>
             <p className="landing-plan__fine">
               Cancel anytime. {DONATION_PERCENT}% of revenue goes to {CHARITY.name}.

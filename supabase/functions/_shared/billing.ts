@@ -7,12 +7,17 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // `supabase secrets set`): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
 // SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 
-// scripts/setup-stripe.ts creates the $7/month price under this lookup key.
-// If it doesn't exist yet, checkout falls back to an inline price so the flow
-// still works end to end.
-export const PRICE_LOOKUP_KEY = "vantage_monthly";
-export const FALLBACK_PRICE = { currency: "usd", unit_amount: 700, product_name: "Vantage" };
-export const TRIAL_DAYS = 7;
+// scripts/setup-stripe.ts creates each plan's price under its lookup key.
+// If one doesn't exist yet, checkout falls back to an inline price so the flow
+// still works end to end. Keep in sync with PLANS in src/lib/billing.ts.
+// No Stripe trial: the free trial runs in the app, from account creation.
+export const PLANS = {
+  monthly: { lookupKey: "vantage_monthly", unitAmount: 700, intervalCount: 1 },
+  quarterly: { lookupKey: "vantage_quarterly", unitAmount: 1500, intervalCount: 3 },
+  yearly: { lookupKey: "vantage_yearly", unitAmount: 5000, intervalCount: 12 },
+} as const;
+export type PlanId = keyof typeof PLANS;
+export const FALLBACK_PRICE = { currency: "usd", product_name: "Vantage" };
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -28,7 +28,9 @@ export default function App() {
     setActiveTab("Company Questions");
   }
 
-  const billing = useSubscription(BILLING_ENABLED ? userId : null);
+  const billing = useSubscription(BILLING_ENABLED ? userId : null, session?.user.created_at);
+  // Plan picker opened from the account menu during the free trial.
+  const [choosingPlan, setChoosingPlan] = useState(false);
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
 
   const pendingLeetCodeUsername =
@@ -60,6 +62,18 @@ export default function App() {
       />
     );
   }
+  if (BILLING_ENABLED && choosingPlan && billing.inFreeTrial) {
+    return (
+      <Paywall
+        subscription={billing.subscription}
+        confirmingCheckout={false}
+        userEmail={session.user.email}
+        onSignOut={signOut}
+        onClose={() => setChoosingPlan(false)}
+        trialEnd={billing.trialEnd}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -67,6 +81,8 @@ export default function App() {
         userEmail={session.user.email}
         onSignOut={signOut}
         subscription={BILLING_ENABLED ? billing.subscription : undefined}
+        trialEnd={billing.inFreeTrial ? billing.trialEnd : null}
+        onChoosePlan={BILLING_ENABLED && billing.inFreeTrial ? () => setChoosingPlan(true) : undefined}
         onStartTour={startTour}
       />
 

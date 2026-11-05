@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   FALLBACK_PRICE,
-  PRICE_LOOKUP_KEY,
-  TRIAL_DAYS,
+  PLANS,
+  type PlanId,
   corsHeaders,
   getServiceClient,
   getStripe,
@@ -11,8 +11,9 @@ import {
 
 // Called from the frontend via supabase.functions.invoke("stripe-checkout",
 // { body: { action } }) — see src/lib/billing.ts.
-//   action "checkout" → Stripe Checkout URL for the $7/month plan, with a
-//                       7-day trial on the user's first subscription
+//   action "checkout" → Stripe Checkout URL for `plan` ("monthly" $7,
+//                       "quarterly" $15, "yearly" $50; default monthly).
+//                       No Stripe trial — the free trial is in-app.
 //   action "portal"   → Stripe Billing Portal URL (update card, cancel)
 // Deployed with verify_jwt: true, so the gateway already rejected anonymous
 // callers; the user id still comes from the verified token, never the body.
@@ -40,10 +41,12 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const action = body.action === "portal" ? "portal" : "checkout";
+    const planId: PlanId = Object.hasOwn(PLANS, body.plan) ? body.plan : "monthly";
+    const plan = PLANS[planId];
 
     const { data: row } = await supabase
       .from("subscriptions")
-      .select("stripe_customer_id, status, has_used_trial")
+      .select("stripe_customer_id, status")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -77,7 +80,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
     }
 
-    const prices = await stripe.prices.list({ lookup_keys: [PRICE_LOOKUP_KEY], active: true, limit: 1 });
+    const prices = await stripe.prices.list({ lookup_keys: [plan.lookupKey], active: true, limit: 1 });
     const priceId = prices.data[0]?.id;
     const lineItem = priceId
       ? { price: priceId, quantity: 1 }
@@ -85,8 +88,8 @@ Deno.serve(async (req) => {
           quantity: 1,
           price_data: {
             currency: FALLBACK_PRICE.currency,
-            unit_amount: FALLBACK_PRICE.unit_amount,
-            recurring: { interval: "month" as const },
+            unit_amount: plan.unitAmount,
+            recurring: { interval: "month" as const, interval_count: plan.intervalCount },
             product_data: { name: FALLBACK_PRICE.product_name },
           },
         };
@@ -96,10 +99,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       client_reference_id: user.id,
       line_items: [lineItem],
-      subscription_data: {
-        metadata: { user_id: user.id },
-        ...(row?.has_used_trial ? {} : { trial_period_days: TRIAL_DAYS }),
-      },
+      subscription_data: { metadata: { user_id: user.id, plan: planId } },
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=cancel`,
     });

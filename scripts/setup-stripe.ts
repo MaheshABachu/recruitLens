@@ -2,11 +2,12 @@
 // STRIPE_SECRET_KEY in .env.local. Safe to re-run — each step reuses what
 // already exists. Creates, in whichever Stripe mode the key belongs to
 // (sk_test_ → test, sk_live_ → live):
-//   1. the "Vantage" product + $7/month price (lookup key vantage_monthly,
-//      which the stripe-checkout Edge Function looks up). Stripe prices are
-//      immutable, so changing PRICE_CENTS creates a new price, moves the
-//      lookup key onto it and archives the old one. Existing subscribers stay
-//      on the price they signed up at.
+//   1. the "Vantage" product + one price per plan (PLANS below: $7/month,
+//      $15/3 months, $50/year, under lookup keys the stripe-checkout Edge
+//      Function looks up). Stripe prices are immutable, so changing a plan's
+//      cents or interval creates a new price, moves the lookup key onto it and
+//      archives the old one. Existing subscribers stay on the price they
+//      signed up at.
 //   2. a webhook endpoint pointing at the stripe-webhook Edge Function, and
 //      saves its signing secret to .env.local as STRIPE_WEBHOOK_SECRET
 //   3. a Billing Portal configuration (update card, cancel, invoices)
@@ -20,9 +21,13 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 const STRIPE_API = "https://api.stripe.com/v1";
-const PRICE_LOOKUP_KEY = "vantage_monthly";
-// Keep in sync with PRICE_MONTHLY in src/lib/billing.ts.
-const PRICE_CENTS = 700;
+// Keep in sync with PLANS in src/lib/billing.ts and
+// supabase/functions/_shared/billing.ts.
+const PLANS = [
+  { lookupKey: "vantage_monthly", cents: 700, intervalCount: 1, label: "$7/month" },
+  { lookupKey: "vantage_quarterly", cents: 1500, intervalCount: 3, label: "$15/3 months" },
+  { lookupKey: "vantage_yearly", cents: 5000, intervalCount: 12, label: "$50/year" },
+];
 const WEBHOOK_EVENTS = [
   "checkout.session.completed",
   "customer.subscription.created",
@@ -64,40 +69,55 @@ interface List<T> {
   data: T[];
 }
 
-async function ensurePrice() {
-  const existing = await stripe<List<{ id: string; unit_amount: number; product: string }>>("GET", "/prices", {
-    "lookup_keys[]": PRICE_LOOKUP_KEY,
-    active: true,
+interface Price {
+  id: string;
+  unit_amount: number;
+  product: string;
+  recurring: { interval: string; interval_count: number } | null;
+}
+
+// All plans share one product: reuse the product behind any existing plan
+// price, or create it.
+async function ensureProduct(): Promise<string> {
+  for (const plan of PLANS) {
+    const existing = await stripe<List<Price>>("GET", "/prices", { "lookup_keys[]": plan.lookupKey, active: true });
+    if (existing.data[0]) return existing.data[0].product;
+  }
+  const product = await stripe<{ id: string }>("POST", "/products", {
+    name: "Vantage",
+    description: "Company-tagged interview questions and a merged new-grad job feed.",
   });
+  console.log(`✓ Created product ${product.id}`);
+  return product.id;
+}
+
+async function ensurePrice(plan: (typeof PLANS)[number], productId: string) {
+  const existing = await stripe<List<Price>>("GET", "/prices", { "lookup_keys[]": plan.lookupKey, active: true });
   const current = existing.data[0];
-  if (current?.unit_amount === PRICE_CENTS) {
-    console.log(`✓ Price exists: ${current.id}`);
+  if (
+    current?.unit_amount === plan.cents &&
+    current.recurring?.interval === "month" &&
+    current.recurring.interval_count === plan.intervalCount
+  ) {
+    console.log(`✓ ${plan.label} price exists: ${current.id}`);
     return;
   }
 
-  const productId =
-    current?.product ??
-    (
-      await stripe<{ id: string }>("POST", "/products", {
-        name: "Vantage",
-        description: "Company-tagged interview questions and a merged new-grad job feed.",
-      })
-    ).id;
   const price = await stripe<{ id: string }>("POST", "/prices", {
-    product: productId,
+    product: current?.product ?? productId,
     currency: "usd",
-    unit_amount: PRICE_CENTS,
+    unit_amount: plan.cents,
     "recurring[interval]": "month",
-    lookup_key: PRICE_LOOKUP_KEY,
+    "recurring[interval_count]": plan.intervalCount,
+    lookup_key: plan.lookupKey,
     transfer_lookup_key: true,
   });
-  const dollars = `$${PRICE_CENTS / 100}/month`;
   if (current) {
     // Archiving only stops new checkouts using it; existing subscriptions keep billing.
     await stripe("POST", `/prices/${current.id}`, { active: false });
-    console.log(`✓ Created ${dollars} price ${price.id}, moved the lookup key to it, archived ${current.id}`);
+    console.log(`✓ Created ${plan.label} price ${price.id}, moved the lookup key to it, archived ${current.id}`);
   } else {
-    console.log(`✓ Created product ${productId} and ${dollars} price ${price.id}`);
+    console.log(`✓ Created ${plan.label} price ${price.id}`);
   }
 }
 
@@ -149,7 +169,8 @@ async function ensurePortalConfiguration() {
 
 async function main() {
   console.log(`Setting up Stripe (${mode} mode)\n`);
-  await ensurePrice();
+  const productId = await ensureProduct();
+  for (const plan of PLANS) await ensurePrice(plan, productId);
   const webhookSecret = await ensureWebhook();
   await ensurePortalConfiguration();
 
