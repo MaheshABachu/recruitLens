@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { getCompanyQuestions } from "../../lib/companyQuestions";
+import { prefetchCompanyQuestions } from "../../lib/companyQuestions";
 import { companyHueVar } from "../../lib/companyColors";
 import type { CompanyStats } from "../../lib/companyStats";
 import { CompanyMonogram } from "./CompanyMonogram";
@@ -136,8 +136,8 @@ export function FeaturedCompanies({ companies, pinned, selected, onSelect, stats
             // Clicking the active tile deselects it, back to the full grid.
             onClick={() => onSelect(isActive ? null : name)}
             // Warm the cache on intent so the click lands on already-loaded data.
-            onPointerEnter={() => void getCompanyQuestions(name)}
-            onFocus={() => void getCompanyQuestions(name)}
+            onPointerEnter={() => prefetchCompanyQuestions(name)}
+            onFocus={() => prefetchCompanyQuestions(name)}
             aria-pressed={isActive}
           >
             <span className="featured-companies__head">

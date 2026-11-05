@@ -1,7 +1,11 @@
-import { RadarChart } from "./RadarChart";
+import { lazy, Suspense } from "react";
 import type { TopicScore } from "../../lib/topicProfile";
 
 const RADAR_TOPIC_LIMIT = 16;
+
+// recharts is most of the Companies tab's code; load it on its own so the
+// board renders first. App preloads it once the page is idle.
+const RadarChart = lazy(() => import("./RadarChart").then((m) => ({ default: m.RadarChart })));
 
 interface TopicChartProps {
   scores: TopicScore[];
@@ -18,7 +22,9 @@ export function TopicChart({ scores }: TopicChartProps) {
   return (
     <div className="topic-profile__body topic-profile__body--column">
       <div className="topic-profile__radar">
-        <RadarChart axes={radarScores.map((s) => ({ label: s.topic, value: s.score }))} />
+        <Suspense fallback={null}>
+          <RadarChart axes={radarScores.map((s) => ({ label: s.topic, value: s.score }))} />
+        </Suspense>
       </div>
       <div className="topic-profile__bars-wrap">
         <ul className="topic-profile__bars">

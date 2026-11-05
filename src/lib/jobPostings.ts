@@ -28,44 +28,44 @@ const TABLE_BY_KIND: Record<PostingKind, string> = {
 };
 
 const PAGE_SIZE = 1000;
+const COLUMNS =
+  "id, company, company_url, title, location, url, category, work_model, salary, requires_us_citizenship, no_sponsorship, is_faang, advanced_degree_required, is_closed, date_posted, sources";
 
-// PostgREST caps each response at PAGE_SIZE rows — this pages through active
-// postings with .range() until a short page signals the end, same pattern as
-// src/lib/companyQuestions.ts's fetchAllCompanyQuestionRows. The secondary
-// .order("id") is required, not cosmetic: date_posted has many ties (nulls,
-// same-day postings), and without a unique tiebreaker Postgres is free to
-// return ties in a different order per page request, causing rows to be
-// skipped or duplicated across the .range() window boundaries.
+// PostgREST caps each response at PAGE_SIZE rows. The first page also asks for
+// the exact count, then the remaining pages load in parallel rather than one
+// after another. The secondary .order("id") is required, not cosmetic:
+// date_posted has many ties (nulls, same-day postings), and without a unique
+// tiebreaker Postgres is free to return ties in a different order per page
+// request, causing rows to be skipped or duplicated across page boundaries.
 async function fetchAllActivePostingRows(kind: PostingKind): Promise<RawJobPostingRow[]> {
-  const rows: RawJobPostingRow[] = [];
-  let from = 0;
-  for (;;) {
-    const { data, error } = await supabase
+  const page = (from: number, withCount = false) =>
+    supabase
       .from(TABLE_BY_KIND[kind])
-      .select(
-        "id, company, company_url, title, location, url, category, work_model, salary, requires_us_citizenship, no_sponsorship, is_faang, advanced_degree_required, is_closed, date_posted, sources",
-      )
+      .select(COLUMNS, withCount ? { count: "exact" } : undefined)
       .eq("is_active", true)
       .order("date_posted", { ascending: false, nullsFirst: false })
       .order("id")
       .range(from, from + PAGE_SIZE - 1)
       .returns<RawJobPostingRow[]>();
-    if (error) throw error;
-    rows.push(...(data ?? []));
-    if (!data || data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
+
+  const first = await page(0, true);
+  if (first.error) throw first.error;
+  const rows = [...(first.data ?? [])];
+  const total = first.count ?? rows.length;
+
+  const rest = [];
+  for (let from = PAGE_SIZE; from < total; from += PAGE_SIZE) rest.push(page(from));
+  for (const result of await Promise.all(rest)) {
+    if (result.error) throw result.error;
+    rows.push(...(result.data ?? []));
   }
   return rows;
 }
 
+// Throws on failure (so the cache keeps its last good copy instead of
+// caching an empty list).
 export async function getJobPostings(kind: PostingKind): Promise<JobPosting[]> {
-  let rows: RawJobPostingRow[];
-  try {
-    rows = await fetchAllActivePostingRows(kind);
-  } catch (error) {
-    console.error(`Failed to load ${kind} postings:`, error);
-    return [];
-  }
+  const rows = await fetchAllActivePostingRows(kind);
 
   return rows.map((r) => ({
     id: r.id,

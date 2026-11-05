@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { prefetch } from "./swrCache";
 
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 export type QuestionTimeWindow = "30days" | "3months" | "6months" | "6months_plus" | "all_time";
@@ -24,102 +25,29 @@ export const TIME_WINDOWS: { value: QuestionTimeWindow; label: string }[] = [
   { value: "30days", label: "30 days" },
 ];
 
-interface RawCompanyQuestionRow {
-  time_window: QuestionTimeWindow;
-  frequency_score: number;
-  lc_questions: {
-    title: string;
-    slug: string;
-    difficulty: QuestionDifficulty | null;
-    leetcode_url: string;
-    lc_question_topics: { lc_topics: { name: string } | null }[];
-  };
-  lc_companies: { name: string };
-}
-
-const PAGE_SIZE = 1000;
-
-// PostgREST caps each response at PAGE_SIZE rows — popular companies (e.g.
-// Google's "all_time" bucket alone has 2000+ rows) exceed that in a single
-// window, so this pages through with .range() until a short page signals the
-// end. .order("id") keeps page boundaries stable across requests.
-async function fetchAllCompanyQuestionRows(companyName: string): Promise<RawCompanyQuestionRow[]> {
-  const rows: RawCompanyQuestionRow[] = [];
-  let from = 0;
-  for (;;) {
-    const { data, error } = await supabase
-      .from("lc_company_questions")
-      .select(
-        `
-        time_window,
-        frequency_score,
-        lc_questions!inner (
-          title, slug, difficulty, leetcode_url,
-          lc_question_topics ( lc_topics ( name ) )
-        ),
-        lc_companies!inner ( name )
-      `,
-      )
-      .ilike("lc_companies.name", companyName)
-      .order("id")
-      .range(from, from + PAGE_SIZE - 1)
-      .returns<RawCompanyQuestionRow[]>();
-    if (error) throw error;
-    rows.push(...(data ?? []));
-    if (!data || data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-  }
-  return rows;
-}
-
 // Per-company LeetCode question data, sourced from
 // github.com/liquidslr/leetcode-company-wise-problems and imported via
 // scripts/import-company-questions.ts — not managed by this app at runtime.
-// Matches on company name only, case-insensitively and without wildcards, so
-// it's an exact match on name, not a fuzzy one.
-export function getCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
-  const key = companyName.toLowerCase();
-  let pending = inflight.get(key);
-  if (!pending) {
-    pending = loadCompanyQuestions(companyName).then((questions) => {
-      resolved.set(key, questions);
-      return questions;
-    });
-    inflight.set(key, pending);
-  }
-  return pending;
+// One RPC call (company_questions, see
+// supabase/migrations/20261105120000_company_questions_function.sql) returns
+// the whole bank as a jsonb array, matched on company name case-insensitively.
+// Throws on failure so the cache keeps its last good copy.
+export async function fetchCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
+  const { data, error } = await supabase.rpc("company_questions", { company_name: companyName });
+  if (error) throw error;
+  return ((data ?? []) as CompanyQuestion[]).map((q) => ({ ...q, frequency_score: Number(q.frequency_score) }));
 }
 
-// Already-fetched results, readable synchronously so a revisited (or
-// hover-prefetched) company renders on click with no loading flash.
-export function getCachedCompanyQuestions(companyName: string): CompanyQuestion[] | undefined {
-  return resolved.get(companyName.toLowerCase());
-}
+// The question bank is static reference data (re-imported rarely), so a
+// cached copy is good for a day before it's revalidated in the background.
+export const COMPANY_QUESTIONS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-// Session-lifetime caches — the question bank is static reference data, so
-// there's nothing to invalidate. A failed fetch resolves to [] and is cached
-// too, matching getCompanyQuestions' existing "log and show empty" behavior.
-const inflight = new Map<string, Promise<CompanyQuestion[]>>();
-const resolved = new Map<string, CompanyQuestion[]>();
+export const companyQuestionsKey = (companyName: string) => `questions:${companyName.toLowerCase()}`;
 
-async function loadCompanyQuestions(companyName: string): Promise<CompanyQuestion[]> {
-  let data: RawCompanyQuestionRow[];
-  try {
-    data = await fetchAllCompanyQuestionRows(companyName);
-  } catch (error) {
-    console.error("Failed to load company questions:", error);
-    return [];
-  }
-
-  return data.map((row) => ({
-    problem_name: row.lc_questions.title,
-    problem_slug: row.lc_questions.slug,
-    difficulty: row.lc_questions.difficulty,
-    frequency_score: Number(row.frequency_score),
-    time_window: row.time_window,
-    leetcode_url: row.lc_questions.leetcode_url,
-    topics: row.lc_questions.lc_question_topics.map((qt) => qt.lc_topics?.name).filter((name): name is string => !!name),
-  }));
+// Warm a company's questions (hover/focus on a tile) so the click renders
+// with no loading flash.
+export function prefetchCompanyQuestions(companyName: string) {
+  prefetch(companyQuestionsKey(companyName), () => fetchCompanyQuestions(companyName), COMPANY_QUESTIONS_MAX_AGE_MS);
 }
 
 // Every company the question bank covers (~470), for the Companies tab's

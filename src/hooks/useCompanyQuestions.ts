@@ -1,33 +1,21 @@
-import { useEffect, useState } from "react";
-import { getCachedCompanyQuestions, getCompanyQuestions, type CompanyQuestion } from "../lib/companyQuestions";
+import { useCallback } from "react";
+import { useSwr } from "../lib/swrCache";
+import {
+  COMPANY_QUESTIONS_MAX_AGE_MS,
+  companyQuestionsKey,
+  fetchCompanyQuestions,
+  type CompanyQuestion,
+} from "../lib/companyQuestions";
 
+const EMPTY: CompanyQuestion[] = [];
+
+// Cached across tab switches and visits (src/lib/swrCache.ts).
 export function useCompanyQuestions(companyName: string | undefined) {
-  const [questions, setQuestions] = useState<CompanyQuestion[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!companyName) {
-      setQuestions([]);
-      return;
-    }
-    const cached = getCachedCompanyQuestions(companyName);
-    if (cached) {
-      setQuestions(cached);
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    getCompanyQuestions(companyName).then((rows) => {
-      if (!cancelled) {
-        setQuestions(rows);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [companyName]);
-
-  return { questions, loading };
+  const loader = useCallback(() => fetchCompanyQuestions(companyName ?? ""), [companyName]);
+  const { data, loading } = useSwr(
+    companyName ? companyQuestionsKey(companyName) : null,
+    loader,
+    COMPANY_QUESTIONS_MAX_AGE_MS,
+  );
+  return { questions: data ?? EMPTY, loading };
 }
