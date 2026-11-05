@@ -31,7 +31,11 @@ export default function App() {
   const billing = useSubscription(BILLING_ENABLED ? userId : null);
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
 
-  const leetCode = useLeetCodeSync(isLockedOut ? null : userId);
+  const pendingLeetCodeUsername =
+    typeof session?.user.user_metadata?.leetcode_username === "string"
+      ? session.user.user_metadata.leetcode_username
+      : null;
+  const leetCode = useLeetCodeSync(isLockedOut ? null : userId, pendingLeetCodeUsername);
   const onboarding = useOnboarding(isLockedOut || passwordRecovery ? null : userId);
 
   // The tour points at the Company Questions landing view, so replaying it

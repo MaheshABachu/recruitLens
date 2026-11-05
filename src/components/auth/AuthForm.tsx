@@ -5,6 +5,8 @@ import { GoogleIcon } from "../shared/GoogleIcon";
 export type AuthMode = "sign-in" | "sign-up" | "forgot" | "update-password";
 
 const MIN_PASSWORD_LENGTH = 8;
+// LeetCode usernames: letters, digits, underscores and hyphens.
+const LEETCODE_USERNAME_PATTERN = "[A-Za-z0-9_\-]+";
 
 const TITLES: Record<AuthMode, string> = {
   "sign-in": "Sign in to Vantage",
@@ -35,14 +37,15 @@ interface AuthFormProps {
   onModeChange?: (mode: AuthMode) => void;
 }
 
-// Email/password + Google sign-in, sign-up, password reset. Collects only an
-// email and password. Used inside AuthDialog on the landing page, and on its
+// Email/password + Google sign-in, sign-up, password reset. Email sign-up also
+// takes an optional LeetCode username, auto-connected on first sign-in. Used inside AuthDialog on the landing page, and on its
 // own for the "set a new password" step after a reset link.
 export function AuthForm({ mode, onModeChange }: AuthFormProps) {
   const { signInWithGoogle, signInWithPassword, signUpWithPassword, sendPasswordReset, updatePassword } = useAuth();
   const passwordId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [leetcodeUsername, setLeetcodeUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Confirmation shown in place of the form once an email has been sent.
@@ -68,7 +71,7 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
       if (mode === "sign-in") {
         await signInWithPassword(trimmedEmail, password);
       } else if (mode === "sign-up") {
-        const { needsConfirmation } = await signUpWithPassword(trimmedEmail, password);
+        const { needsConfirmation } = await signUpWithPassword(trimmedEmail, password, leetcodeUsername.trim() || undefined);
         if (needsConfirmation) setSentTo({ email: trimmedEmail, kind: "confirm" });
       } else if (mode === "forgot") {
         await sendPasswordReset(trimmedEmail);
@@ -109,7 +112,7 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
     <div key={mode} className="auth-form">
       <h2 className="auth-form__title">{TITLES[mode]}</h2>
       {mode === "sign-up" && (
-        <p className="auth-form__lede">All we need is an email and a password.</p>
+        <p className="auth-form__lede">An email, a password, and your LeetCode username if you have one.</p>
       )}
       {mode === "forgot" && (
         <p className="auth-form__lede">Enter your account's email and we'll send you a link to pick a new password.</p>
@@ -163,6 +166,25 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
             />
             {mode !== "sign-in" && <small>At least {MIN_PASSWORD_LENGTH} characters.</small>}
           </div>
+        )}
+
+        {mode === "sign-up" && (
+          <label className="auth-form__field">
+            <span>
+              LeetCode username <span className="auth-form__optional">(optional)</span>
+            </span>
+            <input
+              type="text"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              pattern={LEETCODE_USERNAME_PATTERN}
+              title="Letters, numbers, underscores and hyphens only."
+              value={leetcodeUsername}
+              onChange={(e) => setLeetcodeUsername(e.target.value)}
+            />
+            <small>We'll sync your solved problems as soon as you're in.</small>
+          </label>
         )}
 
         {error && (

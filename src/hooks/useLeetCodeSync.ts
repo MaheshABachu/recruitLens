@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabase";
 import { checkLeetCodeForChanges, getLeetCodeAccount, triggerLeetCodeSync, type LeetCodeAccount } from "../lib/leetcode";
 
 export type LeetCodeStatus = "disconnected" | "connecting" | "connected" | "error";
@@ -14,7 +15,10 @@ function deriveStatus(account: LeetCodeAccount | null): LeetCodeStatus {
   return "connected";
 }
 
-export function useLeetCodeSync(userId: string | null) {
+// pendingUsername: the LeetCode username given at email sign-up (stored in
+// user_metadata). Connected automatically the first time the app loads with
+// no account linked, then cleared from the metadata so it only fires once.
+export function useLeetCodeSync(userId: string | null, pendingUsername: string | null = null) {
   const [account, setAccount] = useState<LeetCodeAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -22,6 +26,7 @@ export function useLeetCodeSync(userId: string | null) {
   // through a ref instead of a stale closure.
   const accountRef = useRef<LeetCodeAccount | null>(null);
   const checking = useRef(false);
+  const autoConnected = useRef(false);
 
   useEffect(() => {
     accountRef.current = account;
@@ -111,6 +116,20 @@ export function useLeetCodeSync(userId: string | null) {
       refresh();
     }
   }
+
+  useEffect(() => {
+    if (loading || !userId || !pendingUsername || autoConnected.current) return;
+    autoConnected.current = true;
+    // Clear first so a failed sync (e.g. a typo'd username) doesn't retry on
+    // every load — the user can fix it from the Sync control instead.
+    supabase.auth.updateUser({ data: { leetcode_username: null } }).catch((err) => {
+      console.error("Failed to clear pending LeetCode username:", err);
+    });
+    if (accountRef.current?.username) return;
+    connect(pendingUsername).catch((err) => console.error("Auto-connecting LeetCode failed:", err));
+    // connect is recreated every render; this should run once per pending name.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, userId, pendingUsername]);
 
   async function resync() {
     if (!account?.username) return;

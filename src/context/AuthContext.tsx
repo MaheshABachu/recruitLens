@@ -13,7 +13,9 @@ interface AuthContextValue {
   passwordRecovery: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUpWithPassword: (email: string, password: string) => Promise<SignUpResult>;
+  // leetcodeUsername is stashed in user_metadata (there's no session yet to
+  // call leetcode-sync with); useLeetCodeSync connects it on first app load.
+  signUpWithPassword: (email: string, password: string, leetcodeUsername?: string) => Promise<SignUpResult>;
   sendPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -57,11 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       },
-      signUpWithPassword: async (email, password) => {
+      signUpWithPassword: async (email, password, leetcodeUsername) => {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: leetcodeUsername ? { leetcode_username: leetcodeUsername } : undefined,
+          },
         });
         if (error) throw error;
         // With "Confirm email" on (the Supabase default) there's no session
