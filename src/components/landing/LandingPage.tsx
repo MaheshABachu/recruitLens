@@ -57,9 +57,9 @@ const JOB_SOURCES: { name: string; jobs: { company: string; dup?: boolean }[] }[
 ];
 
 const FEED: { company: string; title: string; sources: number }[] = [
-  { company: "Stripe", title: "Software Engineer, New Grad", sources: 2 },
-  { company: "Ramp", title: "Software Engineer I", sources: 2 },
-  { company: "Datadog", title: "Software Engineer, Early Career", sources: 1 },
+  { company: "Stripe", title: "Software Engineer Intern, Summer 2027", sources: 2 },
+  { company: "Ramp", title: "Software Engineer, New Grad", sources: 2 },
+  { company: "Datadog", title: "Software Engineering Intern", sources: 1 },
   { company: "Figma", title: "New Grad Engineer", sources: 1 },
 ];
 
@@ -93,7 +93,7 @@ export function LandingPage() {
               So we made our own.
             </h1>
             <p className="landing-hero__lede">
-              Company-tagged interview questions and every new-grad job posting, in one place. Free for{" "}
+              Company-tagged interview questions and every internship and new-grad job posting, in one place. Free for{" "}
               {FREE_TRIAL_DAYS} days with no card, then ${PRICE_MONTHLY} a month, and {DONATION_PERCENT}% of it supports
               undocumented students in Central Texas.
             </p>
@@ -204,12 +204,13 @@ export function LandingPage() {
 
         <section className="landing-feature landing-feature--flip">
           <div className="landing-feature__copy">
-            <h2 className="landing-feature__title">Three job lists. One feed.</h2>
+            <h2 className="landing-feature__title">Three job sources. One feed.</h2>
             <p className="landing-feature__body">
-              New-grad roles get posted to three different GitHub lists. We pull all three every day and merge them,
-              so a role that shows up twice is listed once.
+              Internships and new-grad roles get posted across three different job sources. We pull all three every
+              30 minutes and merge them, so a role that shows up twice is listed once.
             </p>
             <ul className="landing-list">
+              <li>Internships and new-grad roles, each in their own tab</li>
               <li>Skip roles that need US citizenship or won't sponsor a visa</li>
               <li>Filter by remote, hybrid or on-site</li>
               <li>Closed postings drop off on their own</li>
@@ -240,7 +241,7 @@ export function LandingPage() {
                 <li key={job.company} className="landing-merge__job">
                   <span className="landing-merge__job-company">{job.company}</span>
                   <span className="landing-merge__job-title">{job.title}</span>
-                  {job.sources > 1 && <span className="landing-merge__badge">On {job.sources} lists</span>}
+                  {job.sources > 1 && <span className="landing-merge__badge">On {job.sources} sources</span>}
                 </li>
               ))}
             </ul>
@@ -285,7 +286,7 @@ export function LandingPage() {
               <li>Company-tagged questions for {(stats.companies ?? FALLBACK_COMPANY_COUNT).toLocaleString()} companies</li>
               <li>Frequency by time window and topic filters</li>
               <li>Automatic solved tracking from your LeetCode account</li>
-              <li>The merged new-grad job feed, updated daily</li>
+              <li>Internships and new-grad roles from three job sources, updated every 30 minutes</li>
             </ul>
             <button type="button" className="landing-btn landing-btn--primary landing-btn--block" onClick={openSignUp}>
               Try it free for {FREE_TRIAL_DAYS} days

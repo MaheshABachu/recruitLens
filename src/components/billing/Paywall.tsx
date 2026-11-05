@@ -113,7 +113,7 @@ export function Paywall({ subscription, confirmingCheckout, userEmail, onSignOut
                 <li>Company-tagged questions for 470 companies</li>
                 <li>Frequency by time window and topic filters</li>
                 <li>Automatic solved tracking from your LeetCode account</li>
-                <li>The merged new-grad job feed, updated daily</li>
+                <li>Internships and new-grad roles from three job sources, updated every 30 minutes</li>
               </ul>
               <button
                 type="button"
