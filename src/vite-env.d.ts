@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_BILLING_ENABLED?: string;
   // Logo.dev publishable token (pk_…) — enables company logos, see src/lib/companyLogos.ts.
   readonly VITE_LOGO_DEV_TOKEN?: string;
+  // Sentry DSN — turns on error monitoring, see src/lib/monitoring.ts.
+  readonly VITE_SENTRY_DSN?: string;
 }
 
 interface ImportMeta {

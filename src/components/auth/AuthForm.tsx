@@ -198,6 +198,19 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
         </button>
       </form>
 
+      {mode === "sign-up" && (
+        <p className="auth-form__legal">
+          By creating an account, you agree to the{" "}
+          <a href="/terms" target="_blank" rel="noreferrer">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" target="_blank" rel="noreferrer">
+            Privacy Policy
+          </a>
+          .
+        </p>
+      )}
       {mode === "sign-in" && (
         <p className="auth-form__switch">
           New to Vantage?{" "}

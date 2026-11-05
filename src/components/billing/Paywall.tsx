@@ -130,6 +130,9 @@ export function Paywall({ subscription, confirmingCheckout, userEmail, onSignOut
               )}
               <p className="landing-plan__fine">Renews automatically. Cancel anytime.</p>
               <p className="landing-plan__fine">
+                By subscribing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+              </p>
+              <p className="landing-plan__fine">
                 {DONATION_SHARE * 100}% of revenue goes to{" "}
                 <a href={CHARITY.url} target="_blank" rel="noreferrer">
                   {CHARITY.name}

@@ -28,10 +28,12 @@ function formatDollars(amount: number) {
   return `$${amount.toFixed(2)}`;
 }
 
-function statsSentence({ companies, questions, activeJobs }: LandingStats) {
-  const parts = [`${(companies ?? FALLBACK_COMPANY_COUNT).toLocaleString()} companies`];
+function statsSentence({ companies, questions, activeJobs, activeInternships }: LandingStats) {
+  const parts: string[] = [];
+  if (activeInternships !== null) parts.push(`${activeInternships.toLocaleString()} open internships`);
+  if (activeJobs !== null) parts.push(`${activeJobs.toLocaleString()} new-grad roles`);
+  parts.push(`${(companies ?? FALLBACK_COMPANY_COUNT).toLocaleString()} companies`);
   if (questions !== null) parts.push(`${questions.toLocaleString()} tagged questions`);
-  if (activeJobs !== null) parts.push(`${activeJobs.toLocaleString()} open new-grad roles`);
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
@@ -143,7 +145,7 @@ export function LandingPage() {
         </section>
 
         <p className="landing-stats">
-          {statsSentence(stats)}. <span>Refreshed every day.</span>
+          {statsSentence(stats)}. <span>Updated every 30 minutes.</span>
         </p>
 
         <section className="landing-feature">
@@ -301,6 +303,10 @@ export function LandingPage() {
       <footer className="landing-footer">
         <span>© {new Date().getFullYear()} Vantage</span>
         <span>Not affiliated with LeetCode.</span>
+        <span className="landing-footer__links">
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+        </span>
       </footer>
 
       <AuthDialog mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthMode(null)} />

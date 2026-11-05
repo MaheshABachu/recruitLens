@@ -14,7 +14,10 @@
     "setup:stripe": "tsx scripts/setup-stripe.ts"
   },
   "dependencies": {
+    "@sentry/react": "^11.11.0",
     "@supabase/supabase-js": "^2.112.3",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.1.0",
     "driver.js": "^1.10.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

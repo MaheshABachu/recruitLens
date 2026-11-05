@@ -78,6 +78,10 @@ Deno.serve(async (req) => {
     const { error } = await supabase
       .from("subscriptions")
       .upsert({ user_id: userId, ...fields }, { onConflict: "user_id" });
+    // 23503: the user no longer exists (deleted their account, which cancels
+    // the subscription and fires this event). Nothing to sync; don't make
+    // Stripe retry.
+    if (error?.code === "23503") return jsonResponse({ received: true, userDeleted: true });
     if (error) throw error;
 
     return jsonResponse({ received: true });

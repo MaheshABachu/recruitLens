@@ -3,6 +3,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { openBillingPortal, subscriptionStatusLine, type Subscription } from "../../lib/billing";
 import type { Theme } from "../../context/ThemeContext";
 import { LOGOS_ENABLED } from "../../lib/companyLogos";
+import { deleteAccount } from "../../lib/account";
 
 interface AccountMenuProps {
   userEmail: string | null | undefined;
@@ -36,6 +37,8 @@ export function AccountMenu({
   const [open, setOpen] = useState(false);
   const [openingBilling, setOpeningBilling] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
@@ -58,6 +61,22 @@ export function AccountMenu({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      "Delete your Vantage account?\n\nThis permanently deletes your account and data, cancels any subscription " +
+        "immediately with no further charges, and can't be undone.",
+    );
+    if (!confirmed) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await deleteAccount();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Couldn't delete your account. Try again.");
+      setDeleting(false);
+    }
+  }
 
   async function handleManageBilling() {
     setBillingError(null);
@@ -157,6 +176,23 @@ export function AccountMenu({
             <button type="button" className="account-menu__item" onClick={onSignOut}>
               Sign out
             </button>
+            <button
+              type="button"
+              className="account-menu__item account-menu__item--danger"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting account…" : "Delete account"}
+            </button>
+            {deleteError && (
+              <span className="account-menu__error" role="alert">
+                {deleteError}
+              </span>
+            )}
+          </div>
+          <div className="account-menu__legal">
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
           </div>
 
           {LOGOS_ENABLED && (

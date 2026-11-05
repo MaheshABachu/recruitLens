@@ -4,6 +4,7 @@ export interface LandingStats {
   companies: number | null;
   questions: number | null;
   activeJobs: number | null;
+  activeInternships: number | null;
 }
 
 // Signed-out visitors can't read the postings tables (they're gated on
@@ -12,11 +13,12 @@ export interface LandingStats {
 // numbers. Any failure falls back to nulls so the page renders fallback copy.
 export async function fetchLandingStats(): Promise<LandingStats> {
   const { data, error } = await supabase.rpc("landing_stats");
-  if (error || !data) return { companies: null, questions: null, activeJobs: null };
+  if (error || !data) return { companies: null, questions: null, activeJobs: null, activeInternships: null };
   const num = (value: unknown) => (typeof value === "number" ? value : null);
   return {
     companies: num(data.companies),
     questions: num(data.questions),
     activeJobs: num(data.active_jobs),
+    activeInternships: num(data.active_internships),
   };
 }

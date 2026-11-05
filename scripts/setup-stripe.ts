@@ -10,7 +10,8 @@
 //      signed up at.
 //   2. a webhook endpoint pointing at the stripe-webhook Edge Function, and
 //      saves its signing secret to .env.local as STRIPE_WEBHOOK_SECRET
-//   3. a Billing Portal configuration (update card, cancel, invoices)
+//   3. a Billing Portal configuration (update card, cancel, invoices, switch
+//      plans)
 // Then prints the `supabase secrets set` command to finish.
 //
 // Talks to Stripe's REST API with fetch, so there's no stripe npm dependency.
@@ -146,16 +147,16 @@ async function ensureWebhook(): Promise<string | null> {
   return created.secret;
 }
 
-async function ensurePortalConfiguration() {
-  const configs = await stripe<List<{ id: string }>>("GET", "/billing_portal/configurations", {
-    active: true,
-    limit: 1,
-  });
-  if (configs.data[0]) {
-    console.log(`✓ Billing portal configuration exists: ${configs.data[0].id}`);
-    return;
+// Billing Portal: update card, invoices, cancel at period end, and switch
+// between the plans (prorated). Re-running updates the existing
+// configuration so new plans/prices show up in the portal.
+async function ensurePortalConfiguration(productId: string) {
+  const priceIds: string[] = [];
+  for (const plan of PLANS) {
+    const prices = await stripe<List<Price>>("GET", "/prices", { "lookup_keys[]": plan.lookupKey, active: true });
+    if (prices.data[0]) priceIds.push(prices.data[0].id);
   }
-  const created = await stripe<{ id: string }>("POST", "/billing_portal/configurations", {
+  const params: Params = {
     "business_profile[headline]": "Manage your Vantage subscription",
     "features[payment_method_update][enabled]": true,
     "features[invoice_history][enabled]": true,
@@ -163,7 +164,23 @@ async function ensurePortalConfiguration() {
     "features[subscription_cancel][mode]": "at_period_end",
     "features[customer_update][enabled]": true,
     "features[customer_update][allowed_updates][0]": "email",
+    "features[subscription_update][enabled]": true,
+    "features[subscription_update][default_allowed_updates][0]": "price",
+    "features[subscription_update][proration_behavior]": "create_prorations",
+    "features[subscription_update][products][0][product]": productId,
+  };
+  priceIds.forEach((id, i) => (params[`features[subscription_update][products][0][prices][${i}]`] = id));
+
+  const configs = await stripe<List<{ id: string }>>("GET", "/billing_portal/configurations", {
+    active: true,
+    limit: 1,
   });
+  if (configs.data[0]) {
+    await stripe("POST", `/billing_portal/configurations/${configs.data[0].id}`, params);
+    console.log(`✓ Updated billing portal configuration ${configs.data[0].id} (plan switching: ${priceIds.length} prices)`);
+    return;
+  }
+  const created = await stripe<{ id: string }>("POST", "/billing_portal/configurations", params);
   console.log(`✓ Created billing portal configuration ${created.id}`);
 }
 
@@ -172,7 +189,7 @@ async function main() {
   const productId = await ensureProduct();
   for (const plan of PLANS) await ensurePrice(plan, productId);
   const webhookSecret = await ensureWebhook();
-  await ensurePortalConfiguration();
+  await ensurePortalConfiguration(productId);
 
   console.log("\nLast step: give the Edge Functions the keys. Either run");
   console.log(

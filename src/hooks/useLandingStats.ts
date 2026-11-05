@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchLandingStats, type LandingStats } from "../lib/landingStats";
 
-const EMPTY: LandingStats = { companies: null, questions: null, activeJobs: null };
+const EMPTY: LandingStats = { companies: null, questions: null, activeJobs: null, activeInternships: null };
 
 // Same "fetch on mount, no caching" pattern as useLcCompanies.
 export function useLandingStats() {

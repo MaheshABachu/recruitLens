@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
       client_reference_id: user.id,
       line_items: [lineItem],
       subscription_data: { metadata: { user_id: user.id, plan: planId } },
+      // Promotion codes are created in the Stripe dashboard (e.g. a 100%-off
+      // code for testing each plan end to end).
+      allow_promotion_codes: true,
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=cancel`,
     });

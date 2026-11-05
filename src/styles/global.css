@@ -1161,6 +1161,35 @@ a.jobs-board__company:hover {
   color: var(--red);
 }
 
+.account-menu__item--danger:not(:disabled) {
+  color: var(--red);
+}
+
+.account-menu__legal {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 8px 10px 2px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.account-menu__legal a {
+  color: var(--text-faint);
+  text-decoration: none;
+}
+
+.account-menu__legal a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* Logo.dev credit sits under the legal links; one divider is enough. */
+.account-menu__legal + .account-menu__credit {
+  margin-top: 0;
+  border-top: none;
+}
+
 
 /* ---------- Companies tab (question-bank lookup) ---------- */
 .companies-board {
