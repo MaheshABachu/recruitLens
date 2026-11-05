@@ -24,7 +24,6 @@ SUPABASE_SERVICE_ROLE_KEY=  # service role key — never VITE_-prefixed, must no
 VITE_BILLING_ENABLED=    # optional; "true" turns on the Stripe paywall (src/lib/billing.ts). Off by default so the app works before billing is deployed. Also set it in the hosting provider's env for production builds.
 STRIPE_SECRET_KEY=       # optional; only read by scripts/setup-stripe.ts (npm run setup:stripe). The Edge Functions get it from Supabase secrets, not this file.
 STRIPE_WEBHOOK_SECRET=   # written here by npm run setup:stripe for reference; the stripe-webhook function reads it from Supabase secrets.
-VITE_SENTRY_DSN=         # optional; Sentry DSN, turns on error monitoring (src/lib/monitoring.ts). Also set it in the hosting provider's env.
 VITE_LOGO_DEV_TOKEN=     # optional; Logo.dev publishable key (pk_…). Turns on company logos (src/lib/companyLogos.ts); without it every company shows its monogram. Also set it in the hosting provider's env.
 LOGO_DEV_SECRET_KEY=     # optional; Logo.dev secret key (sk_…), never VITE_-prefixed. Only read by scripts/import-company-domains.ts for name→domain search. Also a GitHub Actions secret for sync-jobs.yml.
 ```
@@ -68,6 +67,6 @@ React 18 + TypeScript + Vite. Styling is hand-written CSS custom properties (`sr
 
 **Account deletion:** account menu → Delete account → `src/lib/account.ts` → `delete-account` Edge Function (`verify_jwt: true`), which cancels any live Stripe subscription immediately and then deletes the auth user (all user tables cascade). `stripe-webhook` treats a foreign-key violation (user gone) as handled so Stripe doesn't retry.
 
-**Monitoring:** `src/lib/monitoring.ts` injects Vercel Web Analytics + Speed Insights in production builds (enable both in the Vercel dashboard) and loads Sentry only when `VITE_SENTRY_DSN` is set. Favicon, apple-touch icon and the Open Graph image live in `public/`.
+**Monitoring:** `src/lib/monitoring.ts` injects Vercel Web Analytics + Speed Insights in production builds (both enabled in the Vercel dashboard). No error monitoring. Favicon, apple-touch icon and the Open Graph image live in `public/`.
 
 **Job sync cadence:** GitHub's `schedule` trigger fires every 4-8 hours in practice. `supabase/migrations/20261105140000_dispatch_job_sync_cron.sql` adds a `pg_cron` job that calls the workflow's `workflow_dispatch` API every 30 minutes, using a GitHub fine-grained token (Actions: read and write) stored in Vault as `github_sync_dispatch_token`; it does nothing until that secret exists.

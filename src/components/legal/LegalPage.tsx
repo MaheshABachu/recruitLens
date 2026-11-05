@@ -135,8 +135,8 @@ function Privacy() {
             see or store them.
           </li>
           <li>
-            <strong>Usage and errors:</strong> pages viewed and basic device information through privacy-friendly
-            analytics, and error reports when something breaks, so we can fix it.
+            <strong>Usage:</strong> pages viewed, page performance and basic device information through
+            privacy-friendly, cookieless analytics.
           </li>
           <li>
             <strong>On your device:</strong> your sign-in session, theme choice and a cache of job and question data
@@ -161,7 +161,6 @@ function Privacy() {
           <li>LeetCode (we look up the public profile for the username you provide)</li>
           <li>Logo.dev (company logos load from its servers, which see your IP address)</li>
           <li>Our email delivery provider (account emails)</li>
-          <li>Our error-monitoring provider, if enabled</li>
         </ul>
         <p>We may also disclose information when the law requires it.</p>
       </Section>
