@@ -6,20 +6,17 @@ export interface LandingStats {
   activeJobs: number | null;
 }
 
-// Signed-out visitors can read these: lc_companies / lc_questions /
-// job_postings are shared reference data with anon-readable RLS. head: true
-// returns only the count header, no rows. Each count fails independently to
-// null so the landing page can fall back per-number instead of all-or-nothing.
+// Signed-out visitors can't read the postings tables (they're gated on
+// has_app_access(), see supabase/migrations/20261105130000_gate_data_on_access.sql),
+// so the counts come from the landing_stats() function, which returns only
+// numbers. Any failure falls back to nulls so the page renders fallback copy.
 export async function fetchLandingStats(): Promise<LandingStats> {
-  const [companies, questions, activeJobs] = await Promise.all([
-    supabase.from("lc_companies").select("*", { count: "exact", head: true }),
-    supabase.from("lc_questions").select("*", { count: "exact", head: true }),
-    supabase.from("job_postings").select("*", { count: "exact", head: true }).eq("is_active", true),
-  ]);
-
+  const { data, error } = await supabase.rpc("landing_stats");
+  if (error || !data) return { companies: null, questions: null, activeJobs: null };
+  const num = (value: unknown) => (typeof value === "number" ? value : null);
   return {
-    companies: companies.error ? null : companies.count,
-    questions: questions.error ? null : questions.count,
-    activeJobs: activeJobs.error ? null : activeJobs.count,
+    companies: num(data.companies),
+    questions: num(data.questions),
+    activeJobs: num(data.active_jobs),
   };
 }
