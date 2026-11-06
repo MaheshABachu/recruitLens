@@ -8,6 +8,7 @@
 
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { isFaangPlusCompany } from "../src/lib/faangCompanies";
 
 config({ path: ".env.local" });
 
@@ -32,7 +33,6 @@ interface RawPosting {
   salary: string | null;
   requiresUsCitizenship: boolean;
   noSponsorship: boolean;
-  isFaang: boolean;
   advancedDegreeRequired: boolean;
   isClosed: boolean;
   datePosted: string | null; // ISO yyyy-mm-dd
@@ -254,7 +254,6 @@ async function fetchJobright(feed: Feed): Promise<SourceResult> {
       salary: null,
       requiresUsCitizenship: false,
       noSponsorship: false,
-      isFaang: false,
       advancedDegreeRequired: false,
       isClosed: false,
       datePosted: parseJobrightDate(dateCell),
@@ -314,7 +313,6 @@ async function fetchSpeedyapply(feed: Feed): Promise<SourceResult> {
       salary: salary || null,
       requiresUsCitizenship: false,
       noSponsorship: false,
-      isFaang: /faang/i.test(currentSection),
       advancedDegreeRequired: false,
       isClosed: false,
       datePosted: parseAgeDate(ageCell),
@@ -371,7 +369,6 @@ async function fetchSimplify(feed: Feed): Promise<SourceResult> {
       requiresUsCitizenship: sponsorship.includes("citizen"),
       // Simplify's wording is "Does Not Offer Sponsorship".
       noSponsorship: /does not (offer )?sponsor|no sponsorship/.test(sponsorship),
-      isFaang: false,
       advancedDegreeRequired: requiresAdvancedDegree(d.degrees ?? []),
       isClosed: false,
       datePosted: d.date_posted ? toIsoDate(new Date(d.date_posted * 1000)) : null,
@@ -406,7 +403,6 @@ function mergePostings(all: RawPosting[]): Map<string, MergedPosting> {
     existing.location ??= p.location;
     existing.companyUrl ??= p.companyUrl;
     existing.datePosted ??= p.datePosted;
-    existing.isFaang ||= p.isFaang;
     existing.requiresUsCitizenship ||= p.requiresUsCitizenship;
     existing.noSponsorship ||= p.noSponsorship;
     existing.advancedDegreeRequired ||= p.advancedDegreeRequired;
@@ -456,7 +452,8 @@ async function syncFeed(feed: Feed) {
       salary: p.salary,
       requires_us_citizenship: p.requiresUsCitizenship,
       no_sponsorship: p.noSponsorship,
-      is_faang: p.isFaang,
+      // Our own FAANG+ list (src/lib/faangCompanies.ts), not any source's label.
+      is_faang: isFaangPlusCompany(p.company),
       advanced_degree_required: p.advancedDegreeRequired,
       is_closed: p.isClosed,
       date_posted: p.datePosted,
