@@ -90,19 +90,11 @@ function TileStats({ stats, hasLeetCode }: { stats: CompanyStats | null | undefi
           </span>
         )}
       </span>
-      {hasLeetCode ? (
-        <span className="featured-companies__meter" title={`${stats.solved} of ${stats.total} solved`}>
-          <span className="featured-companies__bar">
-            <span
-              className="featured-companies__bar-fill"
-              style={{ width: `${stats.total ? (stats.solved / stats.total) * 100 : 0}%` }}
-            />
-          </span>
-          <span className="featured-companies__meter-label">{formatPercent(stats.solved, stats.total)} solved</span>
-        </span>
-      ) : (
+      {/* The easy/medium/hard mix always shows; with a LeetCode account,
+          hovering or focusing the tile swaps it for your solved %. */}
+      <span className={`featured-companies__meters ${hasLeetCode ? "featured-companies__meters--swap" : ""}`}>
         <span
-          className="featured-companies__meter"
+          className="featured-companies__meter featured-companies__meter--mix"
           title={`${stats.easy} easy, ${stats.medium} medium, ${stats.hard} hard`}
         >
           <span className="featured-companies__bar featured-companies__bar--mix">
@@ -112,7 +104,21 @@ function TileStats({ stats, hasLeetCode }: { stats: CompanyStats | null | undefi
           </span>
           <span className="featured-companies__meter-label">E / M / H</span>
         </span>
-      )}
+        {hasLeetCode && (
+          <span
+            className="featured-companies__meter featured-companies__meter--solved"
+            title={`${stats.solved} of ${stats.total} solved`}
+          >
+            <span className="featured-companies__bar">
+              <span
+                className="featured-companies__bar-fill"
+                style={{ width: `${stats.total ? (stats.solved / stats.total) * 100 : 0}%` }}
+              />
+            </span>
+            <span className="featured-companies__meter-label">{formatPercent(stats.solved, stats.total)} solved</span>
+          </span>
+        )}
+      </span>
     </>
   );
 }

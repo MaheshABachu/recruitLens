@@ -1639,6 +1639,79 @@ a.jobs-board__company:hover {
   min-height: 15px;
 }
 
+/* Both meters share one grid cell; the tile's hover/focus cross-fades them. */
+.featured-companies__meters {
+  display: grid;
+}
+
+.featured-companies__meters {
+  overflow: hidden;
+}
+
+.featured-companies__meters > .featured-companies__meter {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.28s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Solved meter waits below; on hover the mix slides up and out while it
+   slides up into place and its fill sweeps in from the left. */
+.featured-companies__meter--solved {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.featured-companies__meter--solved .featured-companies__bar-fill {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.featured-companies__tile:hover .featured-companies__meters--swap .featured-companies__meter--mix,
+.featured-companies__tile:focus-visible .featured-companies__meters--swap .featured-companies__meter--mix {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.featured-companies__tile:hover .featured-companies__meter--solved,
+.featured-companies__tile:focus-visible .featured-companies__meter--solved {
+  opacity: 1;
+  transform: none;
+}
+
+.featured-companies__tile:hover .featured-companies__meter--solved .featured-companies__bar-fill,
+.featured-companies__tile:focus-visible .featured-companies__meter--solved .featured-companies__bar-fill {
+  transform: scaleX(1);
+  transition-delay: 0.08s;
+}
+
+/* Touch screens can't hover, so with a LeetCode account they show solved %
+   outright instead of the mix. */
+@media (hover: none) {
+  .featured-companies__meters--swap .featured-companies__meter--mix {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .featured-companies__meters--swap .featured-companies__meter--solved {
+    opacity: 1;
+    transform: none;
+  }
+
+  .featured-companies__meters--swap .featured-companies__meter--solved .featured-companies__bar-fill {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-companies__meters > .featured-companies__meter,
+  .featured-companies__meter--solved .featured-companies__bar-fill {
+    transition: opacity 0.2s ease;
+    transform: none !important;
+  }
+}
+
 .featured-companies__bar {
   flex: 1;
   display: flex;
