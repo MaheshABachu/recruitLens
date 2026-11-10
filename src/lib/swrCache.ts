@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 // Only for global, non-user data: entries aren't scoped to the signed-in user.
 // Bump CACHE_VERSION when a cached value's shape changes.
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const DB_NAME = "vantage-cache";
 const STORE = "entries";
 

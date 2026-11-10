@@ -11,6 +11,7 @@
     "import:company-questions": "tsx scripts/import-company-questions.ts",
     "import:job-postings": "tsx scripts/import-job-postings.ts",
     "import:company-domains": "tsx scripts/import-company-domains.ts",
+    "import:premium-flags": "tsx scripts/import-premium-flags.ts",
     "setup:stripe": "tsx scripts/setup-stripe.ts"
   },
   "dependencies": {

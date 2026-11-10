@@ -232,6 +232,17 @@ button:disabled {
   background: var(--surface-2);
 }
 
+/* LeetCode Premium (paid-only) problems: they open behind LeetCode's paywall. */
+.tag--premium {
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 1px 7px;
+  font-size: 11px;
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--amber);
+}
+
 .tag--accent {
   border-color: transparent;
   background: var(--accent-soft);
@@ -402,7 +413,15 @@ button:disabled {
   gap: 1px;
 }
 
+.company-questions__title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .company-questions__name {
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--text);

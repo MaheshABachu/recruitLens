@@ -1,4 +1,5 @@
 import { useTrendingQuestions } from "../../hooks/useTrendingQuestions";
+import { PremiumTag } from "./PremiumTag";
 import { CompanyMonogram } from "./CompanyMonogram";
 
 interface TrendingQuestionsProps {
@@ -46,6 +47,7 @@ export function TrendingQuestions({ solvedSlugs, onSelectCompany }: TrendingQues
               <a className="trending__name" href={q.leetcode_url} target="_blank" rel="noopener noreferrer">
                 {q.title}
               </a>
+              {q.is_premium && <PremiumTag />}
               {isSolved && (
                 <span className="trending__solved" title="Solved">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-label="Solved" role="img">

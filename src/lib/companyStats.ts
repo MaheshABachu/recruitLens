@@ -22,6 +22,7 @@ export interface TrendingQuestion {
   slug: string;
   difficulty: QuestionDifficulty | null;
   leetcode_url: string;
+  is_premium: boolean;
   company_count: number;
   // Up to three of the companies that asked it, highest frequency first.
   companies: string[];

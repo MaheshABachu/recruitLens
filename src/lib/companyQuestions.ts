@@ -11,6 +11,8 @@ export interface CompanyQuestion {
   frequency_score: number;
   time_window: QuestionTimeWindow;
   leetcode_url: string;
+  // LeetCode Premium (paid-only) problem — opens behind LeetCode's paywall.
+  is_premium: boolean;
   topics: string[];
 }
 

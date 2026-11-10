@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { TIME_WINDOWS, type CompanyQuestion, type QuestionDifficulty, type QuestionTimeWindow } from "../../lib/companyQuestions";
+import { PremiumTag } from "./PremiumTag";
 import { TopicSearch } from "./TopicSearch";
 
 interface CompanyQuestionsProps {
@@ -17,6 +18,7 @@ interface CompanyQuestionsProps {
 
 type SortBy = "frequency" | "name";
 type SolvedFilter = "all" | "solved" | "unsolved";
+type AccessFilter = "all" | "free";
 
 // Filters moved off their default get a hue outline, so it's obvious which
 // ones are narrowing the list.
@@ -44,6 +46,7 @@ export function CompanyQuestions({
   const [selectedTopic, setTopic] = useState<string>("all");
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("frequency");
+  const [access, setAccess] = useState<AccessFilter>("all");
 
   // Topic options come from the loaded company's own questions (across all
   // windows, so the list doesn't shift as the window changes).
@@ -63,6 +66,7 @@ export function CompanyQuestions({
       if (q.time_window !== timeWindow) return false;
       if (difficulty !== "all" && q.difficulty !== difficulty) return false;
       if (topic !== "all" && !q.topics.includes(topic)) return false;
+      if (access === "free" && q.is_premium) return false;
       const isSolved = solvedSlugs.has(q.problem_slug);
       if (solvedFilter === "solved" && !isSolved) return false;
       if (solvedFilter === "unsolved" && isSolved) return false;
@@ -71,7 +75,7 @@ export function CompanyQuestions({
     return filtered.sort((a, b) =>
       sortBy === "frequency" ? b.frequency_score - a.frequency_score : a.problem_name.localeCompare(b.problem_name),
     );
-  }, [questions, timeWindow, difficulty, topic, solvedFilter, sortBy, solvedSlugs]);
+  }, [questions, timeWindow, difficulty, topic, solvedFilter, access, sortBy, solvedSlugs]);
 
   return (
     <div className="company-questions">
@@ -113,6 +117,16 @@ export function CompanyQuestions({
           <option value="all">All</option>
           <option value="solved">Solved</option>
           <option value="unsolved">Unsolved</option>
+        </select>
+
+        <select
+          className={filterClass(access !== "all")}
+          value={access}
+          onChange={(e) => setAccess(e.target.value as AccessFilter)}
+          aria-label="Filter LeetCode Premium questions"
+        >
+          <option value="all">Free + Premium</option>
+          <option value="free">Free only</option>
         </select>
 
         <select
@@ -158,14 +172,17 @@ export function CompanyQuestions({
                   {q.difficulty ?? "?"}
                 </span>
                 <span className="company-questions__main">
-                  <a
-                    className="company-questions__name"
-                    href={q.leetcode_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {q.problem_name}
-                  </a>
+                  <span className="company-questions__title-line">
+                    <a
+                      className="company-questions__name"
+                      href={q.leetcode_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {q.problem_name}
+                    </a>
+                    {q.is_premium && <PremiumTag />}
+                  </span>
                   {q.topics.length > 0 && (
                     <span className="company-questions__topics" title={q.topics.join(", ")}>
                       {q.topics.join(", ")}
