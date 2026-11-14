@@ -16,6 +16,9 @@ interface AccountMenuProps {
   onChoosePlan?: () => void;
   // Replays the onboarding tour.
   onStartTour?: () => void;
+  // Opens the job-alerts screen; alertsStatus is its status line ("Instant", "Off", …).
+  onOpenAlerts?: () => void;
+  alertsStatus?: string | null;
 }
 
 const THEMES: { value: Theme; label: string }[] = [
@@ -24,7 +27,7 @@ const THEMES: { value: Theme; label: string }[] = [
 ];
 
 // The avatar in the top-right corner. Opens a dropdown with the theme switch,
-// Manage billing (Stripe Billing Portal) and Sign out.
+// Job alerts, Manage billing (Stripe Billing Portal) and Sign out.
 export function AccountMenu({
   userEmail,
   onSignOut,
@@ -32,6 +35,8 @@ export function AccountMenu({
   trialEnd = null,
   onChoosePlan,
   onStartTour,
+  onOpenAlerts,
+  alertsStatus,
 }: AccountMenuProps) {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -127,6 +132,22 @@ export function AccountMenu({
               ))}
             </div>
           </div>
+
+          {onOpenAlerts && (
+            <div className="account-menu__section account-menu__section--stacked">
+              <button
+                type="button"
+                className="account-menu__item"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenAlerts();
+                }}
+              >
+                Job alerts
+              </button>
+              {alertsStatus && <span className="account-menu__hint">{alertsStatus}</span>}
+            </div>
+          )}
 
           {subscription !== undefined && (
             <div className="account-menu__section account-menu__section--stacked">

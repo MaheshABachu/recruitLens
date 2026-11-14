@@ -10,9 +10,20 @@ interface TopbarProps {
   trialEnd?: Date | null;
   onChoosePlan?: () => void;
   onStartTour?: () => void;
+  onOpenAlerts?: () => void;
+  alertsStatus?: string | null;
 }
 
-export function Topbar({ userEmail, onSignOut, subscription, trialEnd, onChoosePlan, onStartTour }: TopbarProps) {
+export function Topbar({
+  userEmail,
+  onSignOut,
+  subscription,
+  trialEnd,
+  onChoosePlan,
+  onStartTour,
+  onOpenAlerts,
+  alertsStatus,
+}: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar__left">
@@ -26,6 +37,8 @@ export function Topbar({ userEmail, onSignOut, subscription, trialEnd, onChooseP
           trialEnd={trialEnd}
           onChoosePlan={onChoosePlan}
           onStartTour={onStartTour}
+          onOpenAlerts={onOpenAlerts}
+          alertsStatus={alertsStatus}
         />
       </div>
     </header>

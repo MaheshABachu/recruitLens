@@ -2,7 +2,7 @@
 
 Goal: when the job sync sees a new posting that fits what a user told us they want, email them. SMS is deferred (see **Later: SMS**).
 
-Status: Phase 1 in progress (branch `Communication`). Migration `20261111120000_create_alerts.sql` applied to the project 2026-11-12 (as `create_alerts`); frontend (`src/lib/alerts.ts`, intake, Alerts screen) not started. Phase 0 done 2026-11-14 (`vantageprep.dev` verified in Resend, `RESEND_API_KEY` Supabase secret set).
+Status: Phase 1 built 2026-11-14 (branch `Communication`), not yet tested end to end. Migrations applied: `create_alerts`, `alert_preferences_drop_work_models`, `alert_company_suggestions`. Frontend: `src/lib/alerts.ts`, `src/lib/alertLocations.ts`, `useAlertPreferences`, `useAlertsPrompt`, `src/components/alerts/` (intake before the tour + Account menu → Job alerts). Phase 1 leftovers: `CLAUDE.md` docs, importer category folding. Phase 0 done 2026-11-14 (`vantageprep.dev` verified in Resend, `RESEND_API_KEY` Supabase secret set).
 
 ## Facts that shape the design (checked 2026-11-09)
 
@@ -73,7 +73,7 @@ RLS: users read/write their own `alert_preferences` / `alert_companies`, read th
 A SQL function `match_new_postings(since timestamptz)` (service role) returns `(user_id, kind, posting_id)` for active postings with `first_seen_at > since` where:
 
 - kind is one the user wants, category ∈ user's categories,
-- every keyword list is satisfied (if non-empty): title keywords, locations,
+- every keyword list is satisfied (if non-empty): title keywords, locations. Locations are stored as place labels from `src/lib/alertLocations.ts` ("SF Bay Area", "Texas (state)") or free text; match them with its `locationMatches()` (aliases + whole-word matching, so "NYC" counts as New York City and "CA" doesn't match "Chicago"). That means location filtering runs in `send-alerts` (TS), not in SQL,
 - company matches `alert_companies` by normalized name **or** (`any_faang` and `is_faang`) **or** the user has no companies set,
 - not visa-blocked when `needs_sponsorship`,
 - user has app access — needs a `has_app_access(user_id)` variant, since the current one reads `auth.uid()`,

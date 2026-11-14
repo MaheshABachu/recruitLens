@@ -1,4 +1,4 @@
-import { companyKey } from "./faangCompanies";
+import { companyDisplayName, companyKey } from "./faangCompanies";
 import { supabase } from "./supabase";
 
 // Email job alerts, phase 1: what each user wants to hear about
@@ -77,8 +77,40 @@ export function cleanChips(values: string[]): string[] {
   return out;
 }
 
-export function toAlertCompany(displayName: string): AlertCompany {
-  return { nameKey: companyKey(displayName), displayName: displayName.trim() };
+export function toAlertCompany(name: string): AlertCompany {
+  return { nameKey: companyKey(name), displayName: companyDisplayName(name) };
+}
+
+export interface CompanySuggestion extends AlertCompany {
+  postings: number;
+}
+
+// Companies with the most open postings for the picked kind(s) and roles
+// (alert_company_suggestions RPC), spellings folded by companyKey so TikTok
+// and ByteDance count once. Empty on error.
+export async function getCompanySuggestions(
+  p: Pick<AlertPreferences, "wantsJobs" | "wantsInternships" | "categories">,
+  limit: number,
+): Promise<CompanySuggestion[]> {
+  const { data, error } = await supabase.rpc("alert_company_suggestions", {
+    want_jobs: p.wantsJobs,
+    want_internships: p.wantsInternships,
+    pick_categories: p.categories,
+    max_rows: Math.min(limit * 3, 100),
+  });
+  if (error) {
+    console.error("Failed to load company suggestions:", error);
+    return [];
+  }
+  const byKey = new Map<string, CompanySuggestion>();
+  for (const row of (data ?? []) as { company: string; postings: number }[]) {
+    const company = toAlertCompany(row.company);
+    if (!company.nameKey) continue;
+    const existing = byKey.get(company.nameKey);
+    if (existing) existing.postings += Number(row.postings);
+    else byKey.set(company.nameKey, { ...company, postings: Number(row.postings) });
+  }
+  return [...byKey.values()].sort((a, b) => b.postings - a.postings).slice(0, limit);
 }
 
 function browserTimeZone(): string | null {

@@ -101,7 +101,8 @@ const STEPS: TourStep[] = [
   {
     key: "account",
     title: "Your account",
-    description: "Switch light/dark theme, manage billing, or take this tour again any time.",
+    description:
+      "Set up or change job alerts, switch light/dark theme, manage billing, or take this tour again any time.",
     side: "bottom",
     align: "end",
   },

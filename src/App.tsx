@@ -2,9 +2,12 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Topbar } from "./components/layout/Topbar";
 import { useLeetCodeSync } from "./hooks/useLeetCodeSync";
 import { prefetchJobPostings } from "./hooks/useJobPostings";
+import { useAlertPreferences } from "./hooks/useAlertPreferences";
+import { useAlertsPrompt } from "./hooks/useAlertsPrompt";
 import { useOnboarding } from "./hooks/useOnboarding";
 import { useAuth } from "./hooks/useAuth";
 import { useSubscription } from "./hooks/useSubscription";
+import { alertStatusLabel } from "./lib/alerts";
 import { BILLING_ENABLED } from "./lib/billing";
 
 // Each screen is its own chunk: signed-out visitors don't download the app,
@@ -15,7 +18,8 @@ const Paywall = lazy(() => import("./components/billing/Paywall").then((m) => ({
 const SetPasswordScreen = lazy(() =>
   import("./components/auth/SetPasswordScreen").then((m) => ({ default: m.SetPasswordScreen })),
 );
-const loadCompaniesBoard = () => import("./components/companies/CompaniesBoard");
+const AlertsScreen = lazy(() => import("./components/alerts/AlertsScreen").then((m) => ({ default: m.AlertsScreen })));
+const loadCompaniesBoard =() => import("./components/companies/CompaniesBoard");
 const loadJobsBoard = () => import("./components/jobs/JobsBoard");
 const CompaniesBoard = lazy(() => loadCompaniesBoard().then((m) => ({ default: m.CompaniesBoard })));
 const JobsBoard = lazy(() => loadJobsBoard().then((m) => ({ default: m.JobsBoard })));
@@ -68,7 +72,25 @@ export default function App() {
       ? session.user.user_metadata.leetcode_username
       : null;
   const leetCode = useLeetCodeSync(isLockedOut ? null : userId, pendingLeetCodeUsername);
-  const onboarding = useOnboarding(isLockedOut || passwordRecovery ? null : userId);
+  // Job-alerts intake comes first, once per account; the tour waits for it.
+  const alertsPrompt = useAlertsPrompt(isLockedOut || passwordRecovery ? null : userId);
+  const onboarding = useOnboarding(
+    isLockedOut || passwordRecovery || alertsPrompt.status !== "hidden" ? null : userId,
+  );
+  // Job alerts screen opened from the account menu (anytime, including after
+  // skipping the intake). App keeps its own copy of the settings for the
+  // menu's status line and reloads it whenever the screen closes.
+  const [editingAlerts, setEditingAlerts] = useState(false);
+  const alertSettings = useAlertPreferences(isLockedOut || passwordRecovery ? null : userId);
+  const alertsStatus = alertSettings.loading || alertSettings.loadError
+    ? null
+    : alertSettings.preferences?.emailEnabled
+      ? alertStatusLabel(alertSettings.preferences, !BILLING_ENABLED || billing.hasAccess)
+      : "Off. Get new matching roles by email";
+  function closeAlerts() {
+    setEditingAlerts(false);
+    alertSettings.reload();
+  }
 
   // The tour points at the Company Questions landing view, so replaying it
   // from another tab (or with a company open) goes back there first.
@@ -133,6 +155,33 @@ export default function App() {
     );
   }
 
+  // Only the first visit per browser waits on this lookup; after that a
+  // localStorage flag answers synchronously.
+  if (alertsPrompt.status === "loading") return null;
+  if (alertsPrompt.status === "show") {
+    return (
+      <Suspense fallback={null}>
+        <AlertsScreen
+          userId={session.user.id}
+          userEmail={session.user.email}
+          mode="intake"
+          onDone={() => {
+            alertsPrompt.dismiss();
+            alertSettings.reload();
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  if (editingAlerts) {
+    return (
+      <Suspense fallback={null}>
+        <AlertsScreen userId={session.user.id} userEmail={session.user.email} mode="edit" onDone={closeAlerts} />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="app">
       <Topbar
@@ -142,6 +191,8 @@ export default function App() {
         trialEnd={billing.inFreeTrial ? billing.trialEnd : null}
         onChoosePlan={BILLING_ENABLED && billing.inFreeTrial ? () => setChoosingPlan(true) : undefined}
         onStartTour={startTour}
+        onOpenAlerts={() => setEditingAlerts(true)}
+        alertsStatus={alertsStatus}
       />
 
       {onboarding.showTour && (

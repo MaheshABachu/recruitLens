@@ -111,6 +111,16 @@ const GROUP_KEY = new Map(
   }),
 );
 
+// alias -> its group's display name ("bytedance" -> "TikTok").
+const GROUP_NAME = new Map(
+  Object.entries(FAANG_PLUS).flatMap(([group, aliases]) => aliases.map((alias) => [alias, group] as const)),
+);
+
+// FAANG+ aliases show as their group ("Amazon Web Services (AWS)" -> "Amazon"); anything else as given.
+export function companyDisplayName(name: string): string {
+  return GROUP_NAME.get(normalizeCompanyName(name)) ?? name.trim();
+}
+
 // Stable key for "same company" across sources: the normalized name, with
 // FAANG+ aliases folded to their group, so "Amazon Web Services (AWS)" and
 // "Amazon" both give "amazon". Job alerts store it as alert_companies.name_key.
