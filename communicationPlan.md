@@ -2,7 +2,7 @@
 
 Goal: when the job sync sees a new posting that fits what a user told us they want, email them. SMS is deferred (see **Later: SMS**).
 
-Status: Phase 1 in progress (branch `Communication`). Migration `20261111120000_create_alerts.sql` applied to the project 2026-11-12 (as `create_alerts`); frontend (`src/lib/alerts.ts`, intake, Alerts screen) not started. Phase 0 (Resend domain + `RESEND_API_KEY` secret) unconfirmed.
+Status: Phase 1 in progress (branch `Communication`). Migration `20261111120000_create_alerts.sql` applied to the project 2026-11-12 (as `create_alerts`); frontend (`src/lib/alerts.ts`, intake, Alerts screen) not started. Phase 0 done 2026-11-14 (`vantageprep.dev` verified in Resend, `RESEND_API_KEY` Supabase secret set).
 
 ## Facts that shape the design (checked 2026-11-09)
 
@@ -25,7 +25,7 @@ Fields:
 | Roles | Multi-select of the 5 categories | Required, at least one. |
 | Role keywords | Optional free-text chips ("frontend", "backend", "ML infra") | Matched case-insensitively against `title`. Narrows, never widens. |
 | Ideal companies | Typeahead over posting + `lc_companies` names, plus an "Any FAANG+" toggle | Pinned / in-process companies offered as one-tap suggestions. Empty = any company. |
-| Location / work model | Optional: Remote / Hybrid / On-site, optional city/state chips | Matched against `work_model` / `location` text. |
+| Location | Optional city/state chips | Matched against `location` text. No Remote/Hybrid/On-site filter: ~90% of postings have no `work_model` (dropped 2026-11-14). |
 | Visa | "I need sponsorship" checkbox | Hides postings flagged `no_sponsorship` / `requires_us_citizenship` (same caveat as the visa chip — only Simplify labels these). |
 | Email alerts | On/off, sent to the account email | Turning it on is the opt-in. |
 | Frequency | Instant / Daily digest | Instant = sent within one sync cycle (~30 min). |
@@ -37,7 +37,7 @@ alert_preferences (
   user_id uuid primary key references auth.users on delete cascade,
   wants_jobs boolean, wants_internships boolean,
   categories text[], title_keywords text[],
-  work_models text[], locations text[],
+  locations text[],
   needs_sponsorship boolean, any_faang boolean,
   email_enabled boolean,
   frequency text check (frequency in ('instant','daily')),
@@ -73,7 +73,7 @@ RLS: users read/write their own `alert_preferences` / `alert_companies`, read th
 A SQL function `match_new_postings(since timestamptz)` (service role) returns `(user_id, kind, posting_id)` for active postings with `first_seen_at > since` where:
 
 - kind is one the user wants, category ∈ user's categories,
-- every keyword list is satisfied (if non-empty): title keywords, work models, locations,
+- every keyword list is satisfied (if non-empty): title keywords, locations,
 - company matches `alert_companies` by normalized name **or** (`any_faang` and `is_faang`) **or** the user has no companies set,
 - not visa-blocked when `needs_sponsorship`,
 - user has app access — needs a `has_app_access(user_id)` variant, since the current one reads `auth.uid()`,

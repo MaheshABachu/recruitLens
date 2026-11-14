@@ -1,0 +1,226 @@
+import { companyKey } from "./faangCompanies";
+import { supabase } from "./supabase";
+
+// Email job alerts, phase 1: what each user wants to hear about
+// (communicationPlan.md, supabase/migrations/20261111120000_create_alerts.sql).
+// RLS scopes every query to the caller and user_id defaults to auth.uid(), so
+// nothing here takes a user id except the profiles update.
+
+export const ALERT_CATEGORIES = ["Software", "AI/ML/Data", "Hardware", "Product", "Quant"] as const;
+export type AlertCategory = (typeof ALERT_CATEGORIES)[number];
+
+export type AlertFrequency = "instant" | "daily";
+
+// Mirrors the migration's alert_preferences_list_sizes check.
+export const MAX_LIST_ITEMS = 20;
+
+export interface AlertPreferences {
+  wantsJobs: boolean;
+  wantsInternships: boolean;
+  categories: AlertCategory[];
+  titleKeywords: string[];
+  locations: string[];
+  needsSponsorship: boolean;
+  anyFaang: boolean;
+  emailEnabled: boolean;
+  frequency: AlertFrequency;
+}
+
+export interface AlertCompany {
+  nameKey: string;
+  displayName: string;
+}
+
+export interface AlertSettings {
+  // null = the user has never saved preferences.
+  preferences: AlertPreferences | null;
+  companies: AlertCompany[];
+}
+
+export const DEFAULT_ALERT_PREFERENCES: AlertPreferences = {
+  wantsJobs: false,
+  wantsInternships: false,
+  categories: [],
+  titleKeywords: [],
+  locations: [],
+  needsSponsorship: false,
+  anyFaang: false,
+  emailEnabled: true,
+  frequency: "instant",
+};
+
+// Mirrors the alert_preferences_complete check: email needs a kind and a role.
+export function canEnableEmail(p: AlertPreferences): boolean {
+  return (p.wantsJobs || p.wantsInternships) && p.categories.length > 0;
+}
+
+// Account-menu status line. hasAccess = trial or subscription still live
+// (matching skips users without app access, so their alerts are paused).
+export function alertStatusLabel(p: AlertPreferences | null, hasAccess: boolean): string {
+  if (!p || !p.emailEnabled) return "Off";
+  if (!hasAccess) return "Paused — trial ended";
+  return p.frequency === "daily" ? "Daily" : "Instant";
+}
+
+// Trim, drop empties and case-insensitive duplicates (first spelling wins), cap the length.
+export function cleanChips(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of values) {
+    const value = raw.trim().replace(/\s+/g, " ");
+    const key = value.toLowerCase();
+    if (!value || seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+    if (out.length === MAX_LIST_ITEMS) break;
+  }
+  return out;
+}
+
+export function toAlertCompany(displayName: string): AlertCompany {
+  return { nameKey: companyKey(displayName), displayName: displayName.trim() };
+}
+
+function browserTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? null;
+  } catch {
+    return null;
+  }
+}
+
+interface PreferencesRow {
+  wants_jobs: boolean;
+  wants_internships: boolean;
+  categories: string[];
+  title_keywords: string[];
+  locations: string[];
+  needs_sponsorship: boolean;
+  any_faang: boolean;
+  email_enabled: boolean;
+  frequency: AlertFrequency;
+}
+
+const PREFERENCE_COLUMNS =
+  "wants_jobs, wants_internships, categories, title_keywords, locations, needs_sponsorship, any_faang, email_enabled, frequency";
+
+function fromRow(r: PreferencesRow): AlertPreferences {
+  return {
+    wantsJobs: r.wants_jobs,
+    wantsInternships: r.wants_internships,
+    categories: r.categories as AlertCategory[],
+    titleKeywords: r.title_keywords,
+    locations: r.locations,
+    needsSponsorship: r.needs_sponsorship,
+    anyFaang: r.any_faang,
+    emailEnabled: r.email_enabled,
+    frequency: r.frequency,
+  };
+}
+
+// What actually gets stored: chips cleaned, and email forced off when the
+// row would fail the alert_preferences_complete check.
+export function normalizePreferences(p: AlertPreferences): AlertPreferences {
+  return {
+    ...p,
+    titleKeywords: cleanChips(p.titleKeywords),
+    locations: cleanChips(p.locations),
+    emailEnabled: p.emailEnabled && canEnableEmail(p),
+  };
+}
+
+function toRow(p: AlertPreferences): PreferencesRow & { timezone: string | null } {
+  const n = normalizePreferences(p);
+  return {
+    wants_jobs: n.wantsJobs,
+    wants_internships: n.wantsInternships,
+    categories: n.categories,
+    title_keywords: n.titleKeywords,
+    locations: n.locations,
+    needs_sponsorship: n.needsSponsorship,
+    any_faang: n.anyFaang,
+    email_enabled: n.emailEnabled,
+    frequency: n.frequency,
+    timezone: browserTimeZone(),
+  };
+}
+
+// null = couldn't load (callers show an error, not empty defaults that a save would clobber).
+export async function getAlertSettings(): Promise<AlertSettings | null> {
+  const [prefs, companies] = await Promise.all([
+    supabase.from("alert_preferences").select(PREFERENCE_COLUMNS).maybeSingle<PreferencesRow>(),
+    supabase.from("alert_companies").select("name_key, display_name").order("created_at"),
+  ]);
+  if (prefs.error || companies.error) {
+    console.error("Failed to load alert settings:", prefs.error ?? companies.error);
+    return null;
+  }
+  return {
+    preferences: prefs.data ? fromRow(prefs.data) : null,
+    companies: (companies.data ?? []).map((c) => ({ nameKey: c.name_key, displayName: c.display_name })),
+  };
+}
+
+// Writes preferences, then brings alert_companies in line with `companies`
+// (deletes the removed keys, inserts the new ones). Returns an error message or null.
+export async function saveAlertSettings(
+  preferences: AlertPreferences,
+  companies: AlertCompany[],
+  previousCompanies: AlertCompany[],
+): Promise<string | null> {
+  // user_id is left out so the upsert's DO UPDATE never touches it (clients
+  // have no update grant on it); its default fills it in on insert.
+  const { error: prefsError } = await supabase
+    .from("alert_preferences")
+    .upsert(toRow(preferences), { onConflict: "user_id" });
+  if (prefsError) {
+    console.error("Failed to save alert preferences:", prefsError);
+    return "Couldn't save your alert settings. Try again.";
+  }
+
+  const nextKeys = new Set(companies.map((c) => c.nameKey));
+  const prevKeys = new Set(previousCompanies.map((c) => c.nameKey));
+  const removed = [...prevKeys].filter((k) => !nextKeys.has(k));
+  const added = companies.filter((c) => !prevKeys.has(c.nameKey));
+
+  if (removed.length > 0) {
+    const { error } = await supabase.from("alert_companies").delete().in("name_key", removed);
+    if (error) {
+      console.error("Failed to remove alert companies:", error);
+      return "Saved your settings, but couldn't update your companies. Try again.";
+    }
+  }
+  if (added.length > 0) {
+    const { error } = await supabase
+      .from("alert_companies")
+      .upsert(
+        added.map((c) => ({ name_key: c.nameKey, display_name: c.displayName })),
+        { onConflict: "user_id,name_key", ignoreDuplicates: true },
+      );
+    if (error) {
+      console.error("Failed to add alert companies:", error);
+      return "Saved your settings, but couldn't update your companies. Try again.";
+    }
+  }
+  return null;
+}
+
+// Intake prompt: true = already shown (finished or skipped), false = not yet,
+// null = couldn't tell (callers treat that as "don't show").
+export async function getAlertsPrompted(): Promise<boolean | null> {
+  const { data, error } = await supabase.from("profiles").select("alerts_prompted_at").maybeSingle();
+  if (error) {
+    console.error("Failed to load alerts prompt state:", error);
+    return null;
+  }
+  if (!data) return null;
+  return data.alerts_prompted_at !== null;
+}
+
+export async function markAlertsPrompted(userId: string) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ alerts_prompted_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) console.error("Failed to save alerts prompt state:", error);
+}

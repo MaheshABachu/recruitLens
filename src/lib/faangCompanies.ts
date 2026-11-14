@@ -102,3 +102,19 @@ const ALIASES = new Set(Object.values(FAANG_PLUS).flat());
 export function isFaangPlusCompany(company: string | null | undefined): boolean {
   return !!company && ALIASES.has(normalizeCompanyName(company));
 }
+
+// alias -> its group's key, e.g. "aws" / "amazon web services" / "zoox" -> "amazon".
+const GROUP_KEY = new Map(
+  Object.entries(FAANG_PLUS).flatMap(([group, aliases]) => {
+    const key = normalizeCompanyName(group);
+    return aliases.map((alias) => [alias, key] as const);
+  }),
+);
+
+// Stable key for "same company" across sources: the normalized name, with
+// FAANG+ aliases folded to their group, so "Amazon Web Services (AWS)" and
+// "Amazon" both give "amazon". Job alerts store it as alert_companies.name_key.
+export function companyKey(name: string): string {
+  const normalized = normalizeCompanyName(name);
+  return GROUP_KEY.get(normalized) ?? normalized;
+}
