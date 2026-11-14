@@ -33,6 +33,18 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      # Emails users new postings that match their job alerts
+      # (scripts/send-job-alerts.ts). Daily digests go out on whichever run
+      # lands in each user's 9am hour. Skips itself until RESEND_API_KEY is
+      # set, and a failure here shouldn't mark the postings sync as failed.
+      - name: Send job alerts
+        continue-on-error: true
+        run: npm run send:alerts
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
       # Looks up logo domains for companies that are new since the last run.
       # A failure here shouldn't mark the postings sync as failed.
       - name: Fill company logo domains

@@ -65,7 +65,7 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
       <label className="alerts-field__label" htmlFor={inputId}>
         Ideal companies <span className="alerts-field__optional">Optional</span>
       </label>
-      <p className="alerts-field__hint">Leave empty to hear about every company.</p>
+      <p className="alerts-field__hint">Every new posting at these companies, in any role.</p>
 
       <button
         type="button"

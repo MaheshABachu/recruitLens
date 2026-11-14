@@ -132,8 +132,8 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
             </button>
           </div>
           <p className="alerts-screen__lede">
-            Tell us what you're after and we'll email you when a matching posting goes up. You can change this
-            anytime from the account menu.
+            Pick the companies and places you care about and we'll email you every new posting there, in any role.
+            Your roles and keywords decide what shows up first. You can change this anytime from the account menu.
           </p>
 
           {alerts.loadError ? (
@@ -176,6 +176,10 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
 
               <fieldset className="alerts-field">
                 <legend className="alerts-field__label">Roles</legend>
+                <p className="alerts-field__hint">
+                  These come first in your emails. With no companies or locations below, you'll get every posting in
+                  these roles.
+                </p>
                 <div className="alerts-toggles">
                   {ALERT_CATEGORIES.map((category) => {
                     const on = draft.categories.includes(category);
@@ -194,14 +198,6 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
                 </div>
               </fieldset>
 
-              <ChipInput
-                label="Title keywords"
-                hint="Only roles whose title contains one of these, e.g. frontend, backend, ML infra."
-                placeholder="Type and press Enter"
-                values={draft.titleKeywords}
-                onChange={(titleKeywords) => update({ titleKeywords })}
-              />
-
               <CompanyChooser
                 names={companyNames}
                 pins={pinned}
@@ -217,12 +213,20 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
 
               <ChipInput
                 label="Locations"
-                hint="Leave empty for anywhere."
+                hint="Every new posting in these places, in any role."
                 placeholder="City, metro or state…"
                 values={draft.locations}
                 onChange={(locations) => update({ locations })}
                 suggestions={LOCATION_SUGGESTIONS}
                 quickPicks={{ title: "Popular", items: LOCATION_QUICK_PICKS }}
+              />
+
+              <ChipInput
+                label="Title keywords"
+                hint="Postings whose title matches go to the top of your emails, e.g. power, frontend, ML infra."
+                placeholder="Type and press Enter"
+                values={draft.titleKeywords}
+                onChange={(titleKeywords) => update({ titleKeywords })}
               />
 
               <label className="alerts-check">

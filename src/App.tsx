@@ -80,7 +80,14 @@ export default function App() {
   // Job alerts screen opened from the account menu (anytime, including after
   // skipping the intake). App keeps its own copy of the settings for the
   // menu's status line and reloads it whenever the screen closes.
-  const [editingAlerts, setEditingAlerts] = useState(false);
+  // "Manage alerts" links in alert emails land on /?alerts=1.
+  const [editingAlerts, setEditingAlerts] = useState(() => new URLSearchParams(window.location.search).has("alerts"));
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("alerts")) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("alerts");
+    window.history.replaceState(null, "", url);
+  }, []);
   const alertSettings = useAlertPreferences(isLockedOut || passwordRecovery ? null : userId);
   const alertsStatus = alertSettings.loading || alertSettings.loadError
     ? null

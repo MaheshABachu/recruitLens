@@ -121,7 +121,7 @@ export const ALERT_PLACES: AlertPlace[] = [...AREAS, ...CITY_PLACES];
 // count, then states. The typeahead keeps this order within prefix matches.
 export const LOCATION_SUGGESTIONS: string[] = [...ALERT_PLACES.map((p) => p.label), ...STATE_PLACES.map((p) => p.label)];
 
-function escapeRegex(s: string) {
+export function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

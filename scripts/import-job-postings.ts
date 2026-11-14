@@ -48,9 +48,18 @@ interface Feed {
   categoryAliases?: Record<string, string>;
 }
 
+// Simplify lists a few postings under older names for the same categories
+// (both feeds), folded into the five the app and job alerts use.
+const SIMPLIFY_CATEGORY_ALIASES: Record<string, string> = {
+  "Software Engineering": "Software",
+  "Data Science, AI & Machine Learning": "AI/ML/Data",
+  "Product Management": "Product",
+};
+
 const FEEDS: Feed[] = [
   {
     table: "job_postings",
+    categoryAliases: SIMPLIFY_CATEGORY_ALIASES,
     jobrightUrl: "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-New-Grad/master/README.md",
     speedyapplyUrl: "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
     simplifyUrl: "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
@@ -61,12 +70,7 @@ const FEEDS: Feed[] = [
     speedyapplyUrl: "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/README.md",
     simplifyUrl: "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
     keepListing: (listing) => !allTermsEnded(listing.terms ?? [], new Date()),
-    // Simplify has a few listings under older names for the same categories.
-    categoryAliases: {
-      "Software Engineering": "Software",
-      "Data Science, AI & Machine Learning": "AI/ML/Data",
-      "Product Management": "Product",
-    },
+    categoryAliases: SIMPLIFY_CATEGORY_ALIASES,
   },
 ];
 

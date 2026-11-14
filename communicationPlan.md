@@ -2,7 +2,7 @@
 
 Goal: when the job sync sees a new posting that fits what a user told us they want, email them. SMS is deferred (see **Later: SMS**).
 
-Status: Phase 1 built 2026-11-14 (branch `Communication`), not yet tested end to end. Migrations applied: `create_alerts`, `alert_preferences_drop_work_models`, `alert_company_suggestions`. Frontend: `src/lib/alerts.ts`, `src/lib/alertLocations.ts`, `useAlertPreferences`, `useAlertsPrompt`, `src/components/alerts/` (intake before the tour + Account menu → Job alerts). Phase 1 leftovers: `CLAUDE.md` docs, importer category folding. Phase 0 done 2026-11-14 (`vantageprep.dev` verified in Resend, `RESEND_API_KEY` Supabase secret set).
+Status: Phases 0–2 built 2026-11-14 (branch `Communication`). Sending goes live once `RESEND_API_KEY` is added as a GitHub Actions secret; until then the workflow step skips itself. Phase 2 changed from the original design: sending is a Node step in `sync-jobs.yml` (`scripts/send-job-alerts.ts`), not a `send-alerts` Edge Function, so it reuses `companyKey()` / `locationMatches()` from `src/lib` and needs no `ALERTS_CRON_SECRET`. Matching runs in TS (`src/lib/alertMatching.ts`), not in a SQL `match_new_postings`. Supabase Auth SMTP → Resend is still a manual dashboard step.
 
 ## Facts that shape the design (checked 2026-11-09)
 
@@ -70,16 +70,13 @@ RLS: users read/write their own `alert_preferences` / `alert_companies`, read th
 
 ## 3. Matching
 
-A SQL function `match_new_postings(since timestamptz)` (service role) returns `(user_id, kind, posting_id)` for active postings with `first_seen_at > since` where:
+Decided 2026-11-14: companies and locations decide what gets in; roles and keywords decide what comes first. Code: `src/lib/alertMatching.ts` (`matchPosting`), run in TS by `scripts/send-job-alerts.ts`.
 
-- kind is one the user wants, category ∈ user's categories,
-- every keyword list is satisfied (if non-empty): title keywords, locations. Locations are stored as place labels from `src/lib/alertLocations.ts` ("SF Bay Area", "Texas (state)") or free text; match them with its `locationMatches()` (aliases + whole-word matching, so "NYC" counts as New York City and "CA" doesn't match "Chicago"). That means location filtering runs in `send-alerts` (TS), not in SQL,
-- company matches `alert_companies` by normalized name **or** (`any_faang` and `is_faang`) **or** the user has no companies set,
-- not visa-blocked when `needs_sponsorship`,
-- user has app access — needs a `has_app_access(user_id)` variant, since the current one reads `auth.uid()`,
-- not already in `alert_deliveries`.
-
-Flood guards: ignore postings whose `date_posted` is older than ~3 days (a newly added source would otherwise backfill hundreds), and cap each email at N postings (rest roll into "and 12 more" with a link to the board).
+- **Hard filters:** the posting kind the user wants (jobs / internships); no known visa blocker when they need sponsorship; active, not closed, first seen since the last run, `date_posted` within ~3 days; user has app access (`alert_recipients()` / `has_app_access_for(uid)`); not already in `alert_deliveries`.
+- **Gets in:** at one of their `alert_companies` (matched on `companyKey()`, so FAANG+ aliases count: Twitch is Amazon) or FAANG+ with `any_faang`, **or** in one of their locations (`locationMatches()`), whatever the role.
+- **Fallback:** users with no companies, no FAANG+ toggle and no locations get every posting in their roles.
+- **Ranking:** title-keyword hits first (their own "Matches your keywords" section at the top of the email), then postings in their roles, then company + location together, newest first on ties. Each posting carries a "why" line (company list / FAANG+ / location / keyword).
+- **Caps:** 10 postings per email, then "and N more" with a link to the board.
 
 ## 4. Sending
 

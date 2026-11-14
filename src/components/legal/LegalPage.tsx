@@ -131,6 +131,11 @@ function Privacy() {
             onboarding tour.
           </li>
           <li>
+            <strong>Job alerts:</strong> if you set them up, the kinds of roles, title keywords, companies and
+            locations you want, whether you need visa sponsorship, how often to email you, your time zone (for daily
+            digests), and a record of which postings we've emailed you.
+          </li>
+          <li>
             <strong>Billing:</strong> your subscription status and plan. Card details go directly to Stripe; we never
             see or store them.
           </li>
@@ -147,8 +152,9 @@ function Privacy() {
       <Section title="How we use it">
         <p>
           To provide the service (sign-in, syncing your LeetCode progress, saving your preferences), process payments,
-          send account emails such as password resets, keep the service secure, and understand how it's used so we can
-          improve it. We don't sell your personal information or use it for advertising.
+          send account emails such as password resets, email you new postings that match your job alerts if you turn
+          them on, keep the service secure, and understand how it's used so we can improve it. We don't sell your
+          personal information or use it for advertising.
         </p>
       </Section>
       <Section title="Who we share it with">
@@ -160,7 +166,7 @@ function Privacy() {
           <li>Google (if you choose Google sign-in)</li>
           <li>LeetCode (we look up the public profile for the username you provide)</li>
           <li>Logo.dev (company logos load from its servers, which see your IP address)</li>
-          <li>Our email delivery provider (account emails)</li>
+          <li>Resend (delivers account emails and job alerts)</li>
         </ul>
         <p>We may also disclose information when the law requires it.</p>
       </Section>
@@ -174,6 +180,8 @@ function Privacy() {
       <Section title="Your choices and rights">
         <p>
           You can update or remove your LeetCode username, change preferences, and delete your account at any time.
+          Job alert emails stop when you turn them off under Job alerts in the account menu or use the unsubscribe
+          link in any alert email, and they pause automatically if your trial or subscription ends.
           Depending on where you live, you may have rights to access, correct, export or delete your data, or to object
           to certain processing. Email <Email /> and we'll respond within 30 days.
         </p>
