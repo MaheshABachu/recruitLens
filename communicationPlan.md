@@ -2,7 +2,7 @@
 
 Goal: when the job sync sees a new posting that fits what a user told us they want, email them. SMS is deferred (see **Later: SMS**).
 
-Status: planning (branch `Communication`). Nothing built yet.
+Status: Phase 1 in progress (branch `Communication`). Migration `20261111120000_create_alerts.sql` applied to the project 2026-11-12 (as `create_alerts`); frontend (`src/lib/alerts.ts`, intake, Alerts screen) not started. Phase 0 (Resend domain + `RESEND_API_KEY` secret) unconfirmed.
 
 ## Facts that shape the design (checked 2026-11-09)
 
