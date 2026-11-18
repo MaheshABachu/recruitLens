@@ -13,7 +13,8 @@
     "import:company-domains": "tsx scripts/import-company-domains.ts",
     "import:premium-flags": "tsx scripts/import-premium-flags.ts",
     "send:alerts": "tsx scripts/send-job-alerts.ts",
-    "setup:stripe": "tsx scripts/setup-stripe.ts"
+    "setup:stripe": "tsx scripts/setup-stripe.ts",
+    "build:extension": "npm --prefix extension run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

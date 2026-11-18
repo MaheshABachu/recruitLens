@@ -1,0 +1,45 @@
+body { width: 340px; }
+
+#app { padding: 16px; display: grid; gap: 14px; }
+
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand { font-weight: 600; font-size: 15px; }
+
+.stack { display: grid; gap: 8px; }
+
+.problem {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.problem b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.minutes { display: flex; gap: 6px; align-items: center; }
+.minutes .input { width: 76px; text-align: center; }
+.preset { padding: 6px 10px; }
+.preset[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+
+.modes { display: grid; gap: 6px; }
+.mode {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.mode:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.mode input { margin: 3px 0 0; accent-color: var(--accent); }
+.mode span { font-weight: 500; }
+.mode small { grid-column: 2; color: var(--text-dim); font-size: 12px; }
+
+.timer { font: 600 34px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.row { display: flex; gap: 8px; }
+.row .btn { flex: 1; }
+
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding-top: 10px; }

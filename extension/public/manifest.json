@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Vantage Focus",
+  "version": "0.1.0",
+  "description": "Timed, locked-down LeetCode and NeetCode sessions with official hints only.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnmt7P4Ob+fhUlkIl0O14daVNYXusqWlT3Iz6qpzYKNJbUUFy+0pAl9mX72Hy+UJvtiZdjzymsVlXUI/5uCasnQBx2mNH8ZCSlALQh+95tzm/PMbLYEGhLGhUo/8A+k/li6v3ncYFbIYxkrzIZmQxheFDje4YVbsSvd+Si3gQE4ymZgpDopih2CLFejlpNoNb0+IHVOK+uNK/lMzpnPAm0zFaljMx6WAFIyxfkjpOvDF3VMJZpRHXZw1M3ESzzT1efehPy50il1XMSFLu0yovFDcPbplHxK0Mk7sl0EL4t7iO66DhK0ZIlvEW/2WCnBNFkpLB7JA1w6/3gOE0+2MmEQIDAQAB",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Vantage Focus",
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "incognito": "spanning",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "alarms", "declarativeNetRequest", "identity", "notifications", "offscreen"],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://neetcode.io/*",
+    "https://*.supabase.co/*"
+  ],
+  "optional_host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/*", "https://neetcode.io/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pages/blocked.html", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

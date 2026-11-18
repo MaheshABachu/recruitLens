@@ -1,0 +1,108 @@
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.card { width: 100%; max-width: 640px; display: grid; gap: 12px; padding: 28px; }
+
+.eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+
+h1 { font-size: 24px; }
+
+.time { font-size: 15px; }
+
+.url { word-break: break-all; }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+/* Abort gate */
+.passage {
+  font: 17px/1.75 Georgia, "Times New Roman", serif;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.passage .ok { color: var(--green); }
+.passage .bad { color: var(--red); background: color-mix(in srgb, var(--red) 18%, transparent); border-radius: 2px; }
+.passage .cursor { border-bottom: 2px solid var(--text); }
+.source { font-size: 13px; color: var(--text-dim); font-style: italic; }
+
+textarea.input {
+  min-height: 140px;
+  resize: vertical;
+  font: 16px/1.6 Georgia, "Times New Roman", serif;
+}
+
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width 0.15s; }
+
+.status { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim); }
+
+/* "BAD" stop-sign window (pages/bad.html, a small popup window).
+   The flash runs at 1 Hz (one red/dark cycle per second), well under the
+   WCAG 2.3.1 limit of 3 flashes a second. Reduced motion gets a steady glow. */
+.badwin-body { background: #14120f; color: #f2efe6; overflow: hidden; }
+
+.badwin {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stop-wrap { width: 168px; height: 168px; filter: drop-shadow(0 0 18px rgba(224, 32, 26, 0.55)); }
+
+.stop {
+  --octagon: polygon(29.3% 0, 70.7% 0, 100% 29.3%, 100% 70.7%, 70.7% 100%, 29.3% 100%, 0 70.7%, 0 29.3%);
+  width: 100%;
+  height: 100%;
+  clip-path: var(--octagon);
+  background: #ffffff;
+  padding: 6px;
+}
+
+.stop__inner {
+  width: 100%;
+  height: 100%;
+  clip-path: var(--octagon);
+  background: #d7261e;
+  display: grid;
+  place-items: center;
+}
+
+.stop__inner span {
+  font: 900 52px/1 "Arial Black", "Helvetica Neue", Impact, sans-serif;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.stop-wrap--alarm .stop__inner { animation: bad-flash 1s steps(1, end) infinite; }
+.stop-wrap--alarm { animation: bad-shake 0.4s ease-in-out 1; }
+
+@keyframes bad-flash {
+  0% { background: #e0201a; }
+  50% { background: #4a0b08; }
+}
+
+@keyframes bad-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px) rotate(-2deg); }
+  75% { transform: translateX(6px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stop-wrap--alarm .stop__inner,
+  .stop-wrap--alarm { animation: none; }
+  .stop-wrap { filter: drop-shadow(0 0 22px rgba(224, 32, 26, 0.8)); }
+}
+
+.badwin__title { font-weight: 600; font-size: 16px; color: #ff6b63; }
+.badwin__meta { font-size: 13px; color: #a8a093; }
+.badwin__back { margin-top: 4px; background: #f2efe6; border-color: #f2efe6; color: #17181a; }

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>End session early</title>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="card" id="card">
+        <p class="eyebrow">Vantage Focus</p>
+        <h1>Type this to end your session early</h1>
+        <p class="dim">Word for word, punctuation included. No pasting. Close this tab to keep going instead.</p>
+        <div id="gate" hidden>
+          <div class="passage" id="passage"></div>
+          <p class="source" id="source"></p>
+          <textarea class="input" id="typed" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Start typing…"></textarea>
+          <div class="progress"><div id="bar"></div></div>
+          <div class="status"><span id="count"></span><span id="state"></span></div>
+          <p class="error" id="error"></p>
+        </div>
+        <p class="dim" id="none" hidden>No focus session is running.</p>
+      </div>
+    </main>
+    <script type="module" src="./abort.ts"></script>
+  </body>
+</html>
