@@ -4,7 +4,7 @@ import { ThemeToggle } from "../layout/ThemeToggle";
 import { Logo } from "../shared/Logo";
 import { AuthDialog } from "../auth/AuthDialog";
 import type { AuthMode } from "../auth/AuthForm";
-import type { LandingStats } from "../../lib/landingStats";
+import { FALLBACK_COMPANY_COUNT, type LandingStats } from "../../lib/landingStats";
 import {
   CHARITY,
   DONATION_SHARE,
@@ -22,7 +22,6 @@ const LEETCODE_PREMIUM_MONTHLY = 39;
 const DONATION_PER_MONTH = PRICE_MONTHLY * DONATION_SHARE;
 const DONATION_PERCENT = Math.round(DONATION_SHARE * 100);
 
-const FALLBACK_COMPANY_COUNT = 470;
 
 function formatDollars(amount: number) {
   return `$${amount.toFixed(2)}`;
@@ -65,6 +64,12 @@ const FEED: { company: string; title: string; sources: number }[] = [
   { company: "Figma", title: "New Grad Engineer", sources: 1 },
 ];
 
+const SAMPLE_ALERTS: { company: string; title: string; reason: string }[] = [
+  { company: "Google", title: "Software Engineering Intern, Summer 2027", reason: "One of your companies" },
+  { company: "Jane Street", title: "Software Engineer Intern", reason: "In New York City" },
+  { company: "Notion", title: "Backend Engineering Intern", reason: "Matches “backend”" },
+];
+
 export function LandingPage() {
   const stats = useLandingStats();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
@@ -90,15 +95,19 @@ export function LandingPage() {
         <section className="landing-hero">
           <div className="landing-hero__copy">
             <h1 className="landing-hero__title">
-              LeetCode Premium is too expensive.
-              <br />
-              So we made our own.
+              All your recruiting, all in one place.
             </h1>
             <p className="landing-hero__lede">
-              Company-tagged interview questions and every internship and new-grad job posting, in one place. Free for{" "}
+              Prep for the companies you want, find the roles that are open, and hear about new ones first. Free for{" "}
               {FREE_TRIAL_DAYS} days with no card, then ${PRICE_MONTHLY} a month, and {DONATION_PERCENT}% of it supports
               undocumented students in Central Texas.
             </p>
+            <ul className="landing-hero__offerings">
+              <li>Company-tagged interview questions</li>
+              <li>LeetCode progress sync</li>
+              <li>Internship &amp; new-grad postings</li>
+              <li>Email job alerts</li>
+            </ul>
             <div className="landing-hero__ctas">
               <button type="button" className="landing-btn landing-btn--primary" onClick={openSignUp}>
                 Try it free for {FREE_TRIAL_DAYS} days
@@ -250,6 +259,39 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="landing-feature">
+          <div className="landing-feature__copy">
+            <h2 className="landing-feature__title">Find out about internship drops immediately.</h2>
+            <p className="landing-feature__body">
+              Tell us what you're looking for once. We check for new postings every 30 minutes and email you the ones
+              that match, so you can apply while the role is still fresh.
+            </p>
+            <ul className="landing-list">
+              <li>Pick your roles, target companies and cities</li>
+              <li>Get every match as it lands, or one digest each morning</li>
+              <li>Each posting says why it was sent to you</li>
+              <li>Hide roles that won't sponsor a visa</li>
+            </ul>
+          </div>
+
+          <div className="landing-alert" aria-hidden="true">
+            <div className="landing-alert__head">
+              <span className="landing-alert__from">Vantage Internship Alerts</span>
+              <span className="landing-alert__time">just now</span>
+            </div>
+            <div className="landing-alert__subject">3 new internships match your alerts</div>
+            <ul className="landing-alert__rows">
+              {SAMPLE_ALERTS.map((alert) => (
+                <li key={alert.company} className="landing-alert__row">
+                  <span className="landing-alert__company">{alert.company}</span>
+                  <span className="landing-alert__title">{alert.title}</span>
+                  <span className="landing-alert__reason">{alert.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         <section className="landing-cause">
           <div className="landing-cause__copy">
             <h2 className="landing-feature__title">
@@ -289,6 +331,7 @@ export function LandingPage() {
               <li>Frequency by time window and topic filters</li>
               <li>Automatic solved tracking from your LeetCode account</li>
               <li>Internships and new-grad roles from three job sources, updated every 30 minutes</li>
+              <li>Email alerts for new postings that match what you want, as they land or once a day</li>
             </ul>
             <button type="button" className="landing-btn landing-btn--primary landing-btn--block" onClick={openSignUp}>
               Try it free for {FREE_TRIAL_DAYS} days

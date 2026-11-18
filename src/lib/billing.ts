@@ -49,7 +49,7 @@ export function formatPerMonth(plan: Plan) {
 }
 
 // Share of revenue donated, and where it goes.
-export const DONATION_SHARE = 0.2;
+export const DONATION_SHARE = 0.25;
 export const CHARITY = {
   name: "Rooted Immigrant Collective",
   url: "https://rootedimmigrantcollective.carrd.co/",

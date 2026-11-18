@@ -1,5 +1,8 @@
 import { supabase } from "./supabase";
 
+// Shown while the live count loads, or if landing_stats() fails.
+export const FALLBACK_COMPANY_COUNT = 470;
+
 export interface LandingStats {
   companies: number | null;
   questions: number | null;

@@ -111,6 +111,26 @@
   color: var(--text-dim);
 }
 
+.landing-hero__offerings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 52ch;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-hero__offerings li {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .landing-hero__ctas {
   display: flex;
   flex-wrap: wrap;
@@ -562,6 +582,95 @@
   border-radius: 999px;
   font-size: 11px;
   white-space: nowrap;
+}
+
+/* Job-alert email mock */
+.landing-alert {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.landing-alert__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 0;
+  font-size: 12px;
+}
+
+.landing-alert__from {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.landing-alert__time {
+  color: var(--text-faint);
+}
+
+.landing-alert__subject {
+  padding: 4px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.landing-alert__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-alert__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  padding: 12px 16px;
+}
+
+.landing-alert__row + .landing-alert__row {
+  border-top: 1px solid var(--border);
+}
+
+.landing-alert__company {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.landing-alert__title {
+  grid-column: 1;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.landing-alert__reason {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .landing-alert__row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+  }
+
+  .landing-alert__reason {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 6px;
+  }
 }
 
 /* ---------- Pricing ---------- */

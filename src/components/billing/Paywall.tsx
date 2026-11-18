@@ -9,6 +9,8 @@ import {
   type PlanId,
   type Subscription,
 } from "../../lib/billing";
+import { useLandingStats } from "../../hooks/useLandingStats";
+import { FALLBACK_COMPANY_COUNT } from "../../lib/landingStats";
 import { ThemeToggle } from "../layout/ThemeToggle";
 import { Logo } from "../shared/Logo";
 
@@ -31,6 +33,7 @@ function formatDay(date: Date) {
 // trialing/active subscription (when BILLING_ENABLED), or on demand from the
 // account menu during the trial. Reuses the landing page's plan card styles.
 export function Paywall({ subscription, confirmingCheckout, userEmail, onSignOut, onClose, trialEnd }: PaywallProps) {
+  const stats = useLandingStats();
   const [plan, setPlan] = useState<PlanId>("monthly");
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,10 +113,11 @@ export function Paywall({ subscription, confirmingCheckout, userEmail, onSignOut
                 })}
               </div>
               <ul className="landing-list landing-list--plan">
-                <li>Company-tagged questions for 470 companies</li>
+                <li>Company-tagged questions for {(stats.companies ?? FALLBACK_COMPANY_COUNT).toLocaleString()} companies</li>
                 <li>Frequency by time window and topic filters</li>
                 <li>Automatic solved tracking from your LeetCode account</li>
                 <li>Internships and new-grad roles from three job sources, updated every 30 minutes</li>
+                <li>Email alerts for new postings that match what you want, as they land or once a day</li>
               </ul>
               <button
                 type="button"
@@ -133,7 +137,7 @@ export function Paywall({ subscription, confirmingCheckout, userEmail, onSignOut
                 By subscribing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
               </p>
               <p className="landing-plan__fine">
-                {DONATION_SHARE * 100}% of revenue goes to{" "}
+                {Math.round(DONATION_SHARE * 100)}% of revenue goes to{" "}
                 <a href={CHARITY.url} target="_blank" rel="noreferrer">
                   {CHARITY.name}
                 </a>
