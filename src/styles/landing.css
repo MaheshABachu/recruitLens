@@ -1030,8 +1030,16 @@
   color: var(--text-dim);
 }
 
-.auth-form > .landing-btn--ghost {
+.auth-form > .landing-btn--ghost,
+.auth-form > .google-signin {
   margin-top: 24px;
+}
+
+/* Google's GIS button renders in an iframe; just centre it and hold its height. */
+.google-signin__button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
 }
 
 .auth-form__divider {

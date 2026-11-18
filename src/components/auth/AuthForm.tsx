@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { GoogleIcon } from "../shared/GoogleIcon";
+import { GoogleSignIn } from "./GoogleSignIn";
 
 export type AuthMode = "sign-in" | "sign-up" | "forgot" | "update-password";
 
@@ -41,7 +41,7 @@ interface AuthFormProps {
 // takes an optional LeetCode username, auto-connected on first sign-in. Used inside AuthDialog on the landing page, and on its
 // own for the "set a new password" step after a reset link.
 export function AuthForm({ mode, onModeChange }: AuthFormProps) {
-  const { signInWithGoogle, signInWithPassword, signUpWithPassword, sendPasswordReset, updatePassword } = useAuth();
+  const { signInWithPassword, signUpWithPassword, sendPasswordReset, updatePassword } = useAuth();
   const passwordId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -120,10 +120,7 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
 
       {showGoogle && (
         <>
-          <button type="button" className="landing-btn landing-btn--ghost landing-btn--block" onClick={signInWithGoogle}>
-            <GoogleIcon />
-            Continue with Google
-          </button>
+          <GoogleSignIn mode={mode} />
           <div className="auth-form__divider">
             <span>or with email</span>
           </div>
