@@ -24,6 +24,8 @@ export interface Subscription {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   has_used_trial: boolean;
+  // Row in complimentary_access: lifetime access regardless of Stripe.
+  complimentary?: boolean;
 }
 
 // past_due keeps access while Stripe retries the card; it becomes
@@ -31,6 +33,7 @@ export interface Subscription {
 const ACCESS_STATUSES = new Set<SubscriptionStatus>(["trialing", "active", "past_due"]);
 
 export function hasAccess(subscription: Subscription | null) {
+  if (subscription?.complimentary) return true;
   return !!subscription?.status && ACCESS_STATUSES.has(subscription.status);
 }
 
@@ -41,6 +44,7 @@ function formatDate(iso: string | null) {
 // One-line summary for the account menu. appTrialEnd: the in-app free trial's
 // end, shown when there's no Stripe subscription yet.
 export function subscriptionStatusLine(subscription: Subscription | null, appTrialEnd: Date | null = null) {
+  if (subscription?.complimentary) return "Lifetime access";
   if (!hasAccess(subscription) && appTrialEnd && appTrialEnd.getTime() > Date.now()) {
     return `Free trial until ${formatDate(appTrialEnd.toISOString())}`;
   }
@@ -61,15 +65,26 @@ export function subscriptionStatusLine(subscription: Subscription | null, appTri
 // subscriptions is RLS-scoped to auth.uid() and written only by the
 // stripe-checkout / stripe-webhook Edge Functions.
 export async function getSubscription(): Promise<Subscription | null> {
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("status, trial_end, current_period_end, cancel_at_period_end, has_used_trial")
-    .maybeSingle();
-  if (error) {
-    console.error("Failed to load subscription:", error);
-    return null;
-  }
-  return data;
+  const [sub, comp] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("status, trial_end, current_period_end, cancel_at_period_end, has_used_trial")
+      .maybeSingle(),
+    supabase.from("complimentary_access").select("user_id").maybeSingle(),
+  ]);
+  if (sub.error) console.error("Failed to load subscription:", sub.error);
+  if (comp.error) console.error("Failed to load complimentary access:", comp.error);
+  const complimentary = !comp.error && !!comp.data;
+  const data = sub.error ? null : sub.data;
+  if (!data && !complimentary) return null;
+  return {
+    status: data?.status ?? null,
+    trial_end: data?.trial_end ?? null,
+    current_period_end: data?.current_period_end ?? null,
+    cancel_at_period_end: data?.cancel_at_period_end ?? false,
+    has_used_trial: data?.has_used_trial ?? false,
+    complimentary,
+  };
 }
 
 async function redirectFromBillingFunction(action: "checkout" | "portal", plan?: PlanId) {
