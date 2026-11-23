@@ -64,7 +64,14 @@ export default function App() {
 
   const billing = useSubscription(BILLING_ENABLED ? userId : null, session?.user.created_at);
   // Plan picker opened from the account menu during the free trial.
-  const [choosingPlan, setChoosingPlan] = useState(false);
+  // Trial-reminder emails (scripts/send-trial-reminders.ts) link to /?plans=1.
+  const [choosingPlan, setChoosingPlan] = useState(() => new URLSearchParams(window.location.search).has("plans"));
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("plans")) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("plans");
+    window.history.replaceState(null, "", url);
+  }, []);
   const isLockedOut = BILLING_ENABLED && !billing.hasAccess;
 
   const pendingLeetCodeUsername =

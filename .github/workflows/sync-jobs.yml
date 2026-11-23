@@ -45,6 +45,16 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
+      # Emails free-trial users "your trial ends in 2 days / tomorrow / today"
+      # (scripts/send-trial-reminders.ts). Each reminder goes out once per user.
+      - name: Send trial reminders
+        continue-on-error: true
+        run: npm run send:trial-reminders
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
       # Looks up logo domains for companies that are new since the last run.
       # A failure here shouldn't mark the postings sync as failed.
       - name: Fill company logo domains

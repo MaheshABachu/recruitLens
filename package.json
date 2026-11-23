@@ -13,6 +13,7 @@
     "import:company-domains": "tsx scripts/import-company-domains.ts",
     "import:premium-flags": "tsx scripts/import-premium-flags.ts",
     "send:alerts": "tsx scripts/send-job-alerts.ts",
+    "send:trial-reminders": "tsx scripts/send-trial-reminders.ts",
     "setup:stripe": "tsx scripts/setup-stripe.ts",
     "build:extension": "npm --prefix extension run build"
   },
