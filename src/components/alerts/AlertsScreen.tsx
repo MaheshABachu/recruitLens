@@ -12,7 +12,9 @@ import {
   type AlertPreferences,
   type CompanySuggestion,
 } from "../../lib/alerts";
+import { ALERT_FREQUENCIES, FREQUENCY_DETAIL, FREQUENCY_LABEL } from "../../lib/alertFrequency";
 import { LOCATION_SUGGESTIONS } from "../../lib/alertLocations";
+import { DEFENSE_COMPANY_NAMES } from "../../lib/defenseCompanies";
 import { ThemeToggle } from "../layout/ThemeToggle";
 import { Logo } from "../shared/Logo";
 import { ChipInput } from "./ChipInput";
@@ -32,6 +34,7 @@ type Kind = "jobs" | "internships" | "both";
 
 const LOCATION_QUICK_PICKS = ["Remote", "SF Bay Area", "New York City", "Seattle area", "San Jose, CA", "Austin, TX", "Boston area"];
 const RECOMMENDED_COMPANIES = 12;
+const DEFENSE_PREVIEW = 6;
 
 const KIND_OPTIONS: { id: Kind; label: string }[] = [
   { id: "internships", label: "Internships" },
@@ -47,7 +50,7 @@ function kindOf(p: AlertPreferences): Kind | null {
 }
 
 // Job-alert preferences: what to match (kind, roles, keywords, companies,
-// location, visa) and how to send it (email on/off, instant or daily).
+// location, visa, blocked companies) and how to send it (email on/off, how often).
 export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenProps) {
   const alerts = useAlertPreferences(userId);
   const { companies: companyNames } = useLcCompanies();
@@ -56,6 +59,7 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
   // The form edits a draft, seeded once the saved settings load.
   const [draft, setDraft] = useState<AlertPreferences | null>(null);
   const [draftCompanies, setDraftCompanies] = useState<AlertCompany[]>([]);
+  const [draftExcluded, setDraftExcluded] = useState<AlertCompany[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [recommended, setRecommended] = useState<CompanySuggestion[]>([]);
 
@@ -81,7 +85,23 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
     if (alerts.loading || alerts.loadError || draft) return;
     setDraft(alerts.preferences ?? DEFAULT_ALERT_PREFERENCES);
     setDraftCompanies(alerts.companies);
-  }, [alerts.loading, alerts.loadError, alerts.preferences, alerts.companies, draft]);
+    setDraftExcluded(alerts.excluded);
+  }, [alerts.loading, alerts.loadError, alerts.preferences, alerts.companies, alerts.excluded, draft]);
+
+  // A company lives in one list: adding it to one takes it off the other.
+  function changeCompanies(next: AlertCompany[]) {
+    const keys = new Set(next.map((c) => c.nameKey));
+    setDraftCompanies(next);
+    setDraftExcluded((prev) => prev.filter((c) => !keys.has(c.nameKey)));
+    setError(null);
+  }
+
+  function changeExcluded(next: AlertCompany[]) {
+    const keys = new Set(next.map((c) => c.nameKey));
+    setDraftExcluded(next);
+    setDraftCompanies((prev) => prev.filter((c) => !keys.has(c.nameKey)));
+    setError(null);
+  }
 
   function update(patch: Partial<AlertPreferences>) {
     setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -105,7 +125,7 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
       setError("Pick what you're looking for and at least one role, or turn email alerts off.");
       return;
     }
-    const saveError = await alerts.save(draft, draftCompanies);
+    const saveError = await alerts.save(draft, draftCompanies, draftExcluded);
     if (saveError) setError(saveError);
     else onDone();
   }
@@ -199,16 +219,47 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
               </fieldset>
 
               <CompanyChooser
-                names={companyNames}
-                pins={pinned}
-                recommended={recommended}
+                label="Ideal companies"
+                hint="Every new posting at these companies, in any role."
+                names={[...companyNames, ...recommended.map((r) => r.displayName)]}
                 value={draftCompanies}
-                onChange={(next) => {
-                  setDraftCompanies(next);
-                  setError(null);
+                onChange={changeCompanies}
+                toggle={{
+                  label: "Any FAANG+ company",
+                  className: "alerts-toggle--faang",
+                  on: draft.anyFaang,
+                  onChange: (anyFaang) => update({ anyFaang }),
                 }}
-                anyFaang={draft.anyFaang}
-                onAnyFaangChange={(anyFaang) => update({ anyFaang })}
+                quickPicks={[
+                  { title: "Your pins", items: pinned.map((label) => ({ label })) },
+                  {
+                    title: "Hiring most for your picks",
+                    items: recommended.map((r) => ({ label: r.displayName, detail: String(r.postings) })),
+                  },
+                ]}
+              />
+
+              <CompanyChooser
+                label="Never email me about"
+                hint="Blocked companies never show up in your alerts, even when they match everything else."
+                placeholder="Block a company…"
+                tone="blocked"
+                names={companyNames}
+                value={draftExcluded}
+                onChange={changeExcluded}
+                toggle={{
+                  label: "Block defense tech",
+                  className: "alerts-toggle--block",
+                  on: draft.excludeDefense,
+                  onChange: (excludeDefense) => update({ excludeDefense }),
+                  note: (
+                    <p className="alerts-field__note" title={DEFENSE_COMPANY_NAMES.join(", ")}>
+                      Covers {DEFENSE_COMPANY_NAMES.slice(0, DEFENSE_PREVIEW).join(", ")} and{" "}
+                      {DEFENSE_COMPANY_NAMES.length - DEFENSE_PREVIEW} more defense contractors, plus any company
+                      with “Defense” in its name.
+                    </p>
+                  ),
+                }}
               />
 
               <ChipInput
@@ -255,30 +306,26 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
                   </span>
                 </label>
                 {draft.emailEnabled && (
-                  <div className="alerts-segments" role="radiogroup" aria-label="How often">
-                    {(
-                      [
-                        ["instant", "As they're posted", "Within about 30 minutes"],
-                        ["daily", "Daily digest", "9am your time"],
-                      ] as const
-                    ).map(([id, label, detail]) => (
-                      <label
-                        key={id}
-                        className={`alerts-segment alerts-segment--detail${
-                          draft.frequency === id ? " alerts-segment--active" : ""
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="alerts-frequency"
-                          checked={draft.frequency === id}
-                          onChange={() => update({ frequency: id })}
-                        />
-                        {label}
-                        <small>{detail}</small>
-                      </label>
-                    ))}
-                  </div>
+                  <>
+                    <p className="alerts-field__hint">How often</p>
+                    <div className="alerts-segments alerts-segments--frequency" role="radiogroup" aria-label="How often">
+                      {ALERT_FREQUENCIES.map((id) => (
+                        <label
+                          key={id}
+                          className={`alerts-segment${draft.frequency === id ? " alerts-segment--active" : ""}`}
+                        >
+                          <input
+                            type="radio"
+                            name="alerts-frequency"
+                            checked={draft.frequency === id}
+                            onChange={() => update({ frequency: id })}
+                          />
+                          {FREQUENCY_LABEL[id]}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="alerts-field__note">{FREQUENCY_DETAIL[draft.frequency]}</p>
+                  </>
                 )}
               </fieldset>
 

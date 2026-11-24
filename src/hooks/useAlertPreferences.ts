@@ -10,12 +10,12 @@ import {
 
 type LoadState = "loading" | "ready" | "error";
 
-// Loads the caller's alert preferences + ideal companies and saves them as one
+// Loads the caller's alert preferences + ideal and blocked companies and saves them as one
 // form (not optimistic: save resolves to an error message or null so the
 // intake / Alerts screen can show it). Pass null while signed out.
 export function useAlertPreferences(userId: string | null) {
   const [state, setState] = useState<LoadState>("loading");
-  const [settings, setSettings] = useState<AlertSettings>({ preferences: null, companies: [] });
+  const [settings, setSettings] = useState<AlertSettings>({ preferences: null, companies: [], excluded: [] });
   const [saving, setSaving] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -40,16 +40,20 @@ export function useAlertPreferences(userId: string | null) {
   const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 
   const save = useCallback(
-    async (preferences: AlertPreferences, companies: AlertCompany[]): Promise<string | null> => {
+    async (preferences: AlertPreferences, companies: AlertCompany[], excluded: AlertCompany[]): Promise<string | null> => {
       setSaving(true);
-      const error = await saveAlertSettings(preferences, companies, settings.companies);
+      const error = await saveAlertSettings(
+        preferences,
+        { companies, excluded },
+        { companies: settings.companies, excluded: settings.excluded },
+      );
       setSaving(false);
       // Reload either way: a partial failure may have written some of it.
       if (error) reload();
-      else setSettings({ preferences: normalizePreferences(preferences), companies });
+      else setSettings({ preferences: normalizePreferences(preferences), companies, excluded });
       return error;
     },
-    [settings.companies, reload],
+    [settings.companies, settings.excluded, reload],
   );
 
   return {
@@ -57,6 +61,7 @@ export function useAlertPreferences(userId: string | null) {
     loadError: state === "error",
     preferences: settings.preferences,
     companies: settings.companies,
+    excluded: settings.excluded,
     saving,
     save,
     reload,

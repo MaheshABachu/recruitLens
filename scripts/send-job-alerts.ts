@@ -13,8 +13,10 @@
 //      (alert_recipients(); src/lib/alertMatching.ts) and queues an
 //      alert_deliveries row per match. The unique key means a posting is
 //      never queued twice for a user.
-//   3. Sends: instant users get one email per kind with everything queued;
-//      daily users get one digest per kind during 9am in their timezone.
+//   3. Sends one email per kind with everything queued, paced by each user's
+//      frequency (src/lib/alertFrequency.ts): 30m users every run; 4h / 6h /
+//      12h users once that long has passed since their last alert email
+//      (alert_last_sent()); 24h users one digest during 9am in their timezone.
 //      Queued rows older than STALE_DAYS (access ended, alerts turned off)
 //      are marked skipped instead.
 //
@@ -30,7 +32,8 @@ import { randomUUID } from "node:crypto";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { LEGAL } from "../src/lib/legal";
-import type { AlertCategory, AlertFrequency, AlertPreferences } from "../src/lib/alerts";
+import type { AlertCategory, AlertPreferences } from "../src/lib/alerts";
+import { FREQUENCY_HOURS, toAlertFrequency, type AlertFrequency } from "../src/lib/alertFrequency";
 import { matchPosting, type AlertMatch, type AlertPosting, type AlertPostingKind, type AlertProfile } from "../src/lib/alertMatching";
 import { buildAlertEmail, matchReason, type EmailPosting } from "./alert-email";
 
@@ -39,6 +42,8 @@ config({ path: ".env.local" });
 const MAX_POSTING_AGE_DAYS = 3;
 const STALE_DAYS = 3;
 const DIGEST_HOUR = 9;
+// Runs land roughly every 30 minutes, so an interval counts as up this long early.
+const INTERVAL_SLACK_HOURS = 0.25;
 // Resend's default limit is 2 requests/second.
 const SEND_GAP_MS = 600;
 
@@ -78,8 +83,9 @@ interface PrefsRow {
   locations: string[];
   needs_sponsorship: boolean;
   any_faang: boolean;
+  exclude_defense: boolean;
   email_enabled: boolean;
-  frequency: AlertFrequency;
+  frequency: string;
   timezone: string | null;
   unsubscribe_token: string;
 }
@@ -88,6 +94,7 @@ interface Recipient {
   userId: string;
   email: string;
   prefs: PrefsRow;
+  frequency: AlertFrequency;
   profile: AlertProfile;
 }
 
@@ -150,8 +157,9 @@ function toPreferences(r: PrefsRow): AlertPreferences {
     locations: r.locations,
     needsSponsorship: r.needs_sponsorship,
     anyFaang: r.any_faang,
+    excludeDefense: r.exclude_defense,
     emailEnabled: r.email_enabled,
-    frequency: r.frequency,
+    frequency: toAlertFrequency(r.frequency),
   };
 }
 
@@ -172,12 +180,21 @@ async function loadRecipients(): Promise<Recipient[]> {
     await supabase.from("alert_companies").select("user_id, name_key").in("user_id", ids),
     "alert_companies",
   ) as { user_id: string; name_key: string }[];
+  const excluded = must(
+    await supabase.from("alert_excluded_companies").select("user_id, name_key").in("user_id", ids),
+    "alert_excluded_companies",
+  ) as { user_id: string; name_key: string }[];
 
-  const keysByUser = new Map<string, Set<string>>();
-  for (const c of companies) {
-    if (!keysByUser.has(c.user_id)) keysByUser.set(c.user_id, new Set());
-    keysByUser.get(c.user_id)!.add(c.name_key);
-  }
+  const keysOf = (rows: { user_id: string; name_key: string }[]) => {
+    const byUser = new Map<string, Set<string>>();
+    for (const c of rows) {
+      if (!byUser.has(c.user_id)) byUser.set(c.user_id, new Set());
+      byUser.get(c.user_id)!.add(c.name_key);
+    }
+    return byUser;
+  };
+  const keysByUser = keysOf(companies);
+  const excludedByUser = keysOf(excluded);
   const prefsByUser = new Map(prefs.map((p) => [p.user_id, p]));
 
   return live.flatMap((r) => {
@@ -187,7 +204,12 @@ async function loadRecipients(): Promise<Recipient[]> {
       userId: r.user_id,
       email: r.email,
       prefs: p,
-      profile: { preferences: toPreferences(p), companyKeys: keysByUser.get(r.user_id) ?? new Set() },
+      frequency: toAlertFrequency(p.frequency),
+      profile: {
+        preferences: toPreferences(p),
+        companyKeys: keysByUser.get(r.user_id) ?? new Set(),
+        excludedKeys: excludedByUser.get(r.user_id) ?? new Set(),
+      },
     }];
   });
 }
@@ -243,10 +265,10 @@ function asEmailPosting({ posting: p, match }: Ranked): EmailPosting {
   return { company: p.company, title: p.title, location: p.location, salary: p.salary, url: p.url, match };
 }
 
-function emailFor(r: Recipient, kind: AlertPostingKind, digest: boolean, ranked: Ranked[]) {
+function emailFor(r: Recipient, kind: AlertPostingKind, ranked: Ranked[]) {
   return buildAlertEmail({
     kind,
-    digest,
+    frequency: r.frequency,
     postings: ranked.map(asEmailPosting),
     manageUrl: `${SITE}/?alerts=1`,
     unsubscribeUrl: `${SITE}/unsubscribe?token=${r.prefs.unsubscribe_token}`,
@@ -293,8 +315,8 @@ async function dryRun() {
     for (const r of recipients) {
       const matched = rank(r, kind, postings);
       if (matched.length === 0) continue;
-      const email = emailFor(r, kind, r.prefs.frequency === "daily", matched);
-      console.log(`  ${r.email} (${r.prefs.frequency}): ${matched.length} match(es). Subject: "${email.subject}"`);
+      const email = emailFor(r, kind, matched);
+      console.log(`  ${r.email} (${r.frequency}): ${matched.length} match(es). Subject: "${email.subject}"`);
       for (const { posting: p, match } of matched.slice(0, 8)) {
         console.log(`    - ${p.company}: ${p.title} [${p.location ?? "?"}] (${matchReason(match) || "role"})`);
       }
@@ -380,21 +402,27 @@ async function run() {
       "queued deliveries",
     ) as DeliveryRow[];
 
-    // Daily users: only during their digest hour, and once a day.
-    const recentlySent = new Set<string>();
-    const dailyIds = recipients.filter((r) => r.prefs.frequency === "daily").map((r) => r.userId);
-    if (dailyIds.length > 0) {
-      const recent = must(
-        await supabase
-          .from("alert_deliveries")
-          .select("user_id")
-          .eq("status", "sent")
-          .in("user_id", dailyIds)
-          .gt("sent_at", new Date(now.getTime() - 20 * 3_600_000).toISOString()),
-        "recent digests",
-      ) as { user_id: string }[];
-      for (const r of recent) recentlySent.add(r.user_id);
+    // Pacing: when each user last got an alert email (any kind).
+    const lastSent = new Map<string, number>();
+    if (recipients.some((r) => r.frequency !== "30m")) {
+      const rows = must(await supabase.rpc("alert_last_sent"), "alert_last_sent") as {
+        user_id: string;
+        last_sent_at: string;
+      }[];
+      for (const row of rows) lastSent.set(row.user_id, new Date(row.last_sent_at).getTime());
     }
+    const hoursSinceLast = (userId: string) => {
+      const at = lastSent.get(userId);
+      return at === undefined ? Infinity : (now.getTime() - at) / 3_600_000;
+    };
+    const due = (r: Recipient) => {
+      if (r.frequency === "30m") return true;
+      // Daily: during the digest hour, once a day.
+      if (r.frequency === "24h") return hourIn(r.prefs.timezone, now) === DIGEST_HOUR && hoursSinceLast(r.userId) >= 20;
+      return hoursSinceLast(r.userId) >= FREQUENCY_HOURS[r.frequency] - INTERVAL_SLACK_HOURS;
+    };
+    // Decided once per run, so a user's jobs and internships emails go out together.
+    const dueUsers = new Set(recipients.filter(due).map((r) => r.userId));
 
     const groups = new Map<string, DeliveryRow[]>();
     for (const d of queued) {
@@ -407,8 +435,7 @@ async function run() {
       const [userId, kind] = key.split("|") as [string, AlertPostingKind];
       const r = byUser.get(userId);
       if (!r) continue;
-      const digest = r.prefs.frequency === "daily";
-      if (digest && (hourIn(r.prefs.timezone, now) !== DIGEST_HOUR || recentlySent.has(userId))) continue;
+      if (!dueUsers.has(userId)) continue;
 
       // Re-read the postings: some may have closed since they were queued.
       const postings = must(
@@ -432,7 +459,7 @@ async function run() {
       if (toSend.length === 0) continue;
 
       const emailId = randomUUID();
-      const email = emailFor(r, kind, digest, ordered);
+      const email = emailFor(r, kind, ordered);
       const ids = toSend.map((d) => d.id);
       try {
         await sendEmail(r.email, kind, r.prefs.unsubscribe_token, emailId, email);
@@ -444,7 +471,7 @@ async function run() {
           "mark sent",
         );
         sent += ids.length;
-        console.log(`Sent ${kind} ${digest ? "digest" : "alert"} (${ids.length}) to user ${userId}.`);
+        console.log(`Sent ${kind} alert (${r.frequency}, ${ids.length}) to user ${userId}.`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`Failed to send to user ${userId}: ${message}`);

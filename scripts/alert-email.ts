@@ -7,6 +7,7 @@
 
 import { LEGAL } from "../src/lib/legal";
 import type { AlertMatch, AlertPostingKind } from "../src/lib/alertMatching";
+import { FREQUENCY_HOURS, type AlertFrequency } from "../src/lib/alertFrequency";
 
 export const MAX_POSTINGS_PER_EMAIL = 10;
 
@@ -21,7 +22,8 @@ export interface EmailPosting {
 
 export interface AlertEmailInput {
   kind: AlertPostingKind;
-  digest: boolean;
+  // 24h is the daily digest; 4h/6h/12h batch the last few hours.
+  frequency: AlertFrequency;
   // Best match first.
   postings: EmailPosting[];
   manageUrl: string;
@@ -68,7 +70,8 @@ export function matchReason(m: AlertMatch | null): string {
 const hasKeywords = (p: EmailPosting) => (p.match?.keywords.length ?? 0) > 0;
 
 export function buildAlertEmail(input: AlertEmailInput): AlertEmail {
-  const { kind, digest, postings } = input;
+  const { kind, frequency, postings } = input;
+  const digest = frequency === "24h";
   const total = postings.length;
   const shown = postings.slice(0, MAX_POSTINGS_PER_EMAIL);
   const more = total - shown.length;
@@ -85,7 +88,11 @@ export function buildAlertEmail(input: AlertEmailInput): AlertEmail {
         ? `New at ${lead.company}: ${lead.title}`
         : `${plural(total, kind)} at ${listPhrase([...new Set(postings.map((p) => p.company))])}`;
 
-  const heading = digest ? `${plural(total, kind)} matched your alerts today` : `${plural(total, kind)} just posted`;
+  const heading = digest
+    ? `${plural(total, kind)} matched your alerts today`
+    : frequency === "30m"
+      ? `${plural(total, kind)} just posted`
+      : `${plural(total, kind)} posted in the last ${FREQUENCY_HOURS[frequency]} hours`;
 
   const meta = (p: EmailPosting) => [p.location, p.salary].filter(Boolean).join(" · ");
 

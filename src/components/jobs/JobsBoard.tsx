@@ -4,6 +4,7 @@ import { useLcCompanies } from "../../hooks/useLcCompanies";
 import { useCompanyStats } from "../../hooks/useCompanyStats";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { JobRow, daysSince } from "./JobRow";
+import { LocationFilter, postingInPlaces } from "./LocationFilter";
 import type { JobPosting } from "../../types/jobPosting";
 import type { PostingKind } from "../../lib/jobPostings";
 
@@ -62,6 +63,7 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
   const [category, setCategory] = useState(ALL);
   const [source, setSource] = useState(ALL);
   const [workModel, setWorkModel] = useState(ALL);
+  const [places, setPlaces] = useState<string[]>([]);
   const [toggles, setToggles] = useState<Set<ToggleKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
@@ -92,6 +94,7 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
       if (category !== ALL && p.category !== category) return false;
       if (source !== ALL && !p.sources.includes(source)) return false;
       if (workModel !== ALL && p.workModel !== workModel) return false;
+      if (!postingInPlaces(p, places)) return false;
       for (const key of toggles) if (!TOGGLES[key].test(p)) return false;
       if (q && !p.company.toLowerCase().includes(q) && !p.title.toLowerCase().includes(q)) return false;
       return true;
@@ -101,12 +104,12 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
         ? (b.datePosted ?? "").localeCompare(a.datePosted ?? "")
         : a.company.localeCompare(b.company),
     );
-  }, [postings, search, category, source, workModel, toggles, sortBy]);
+  }, [postings, search, category, source, workModel, places, toggles, sortBy]);
 
   // Filters changed the result set out from under the current page — start over.
   useEffect(() => {
     setVisibleCount(PAGE_STEP);
-  }, [search, category, source, workModel, toggles, sortBy]);
+  }, [search, category, source, workModel, places, toggles, sortBy]);
 
   const visibleRows = rows.slice(0, visibleCount);
 
@@ -124,13 +127,19 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
   const prepStats = useCompanyStats(visibleBankNames, null);
 
   const hasFilters =
-    search.trim() !== "" || category !== ALL || source !== ALL || workModel !== ALL || toggles.size > 0;
+    search.trim() !== "" ||
+    category !== ALL ||
+    source !== ALL ||
+    workModel !== ALL ||
+    places.length > 0 ||
+    toggles.size > 0;
 
   function clearFilters() {
     setSearch("");
     setCategory(ALL);
     setSource(ALL);
     setWorkModel(ALL);
+    setPlaces([]);
     setToggles(new Set());
   }
 
@@ -215,6 +224,8 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
           aria-label="Search postings"
         />
 
+        <LocationFilter postings={postings} value={places} onChange={setPlaces} />
+
         <select
           className={filterClass(category !== ALL)}
           value={category}
@@ -265,11 +276,22 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
                 aria-pressed={workModel === value}
                 onClick={() => setWorkModel(value)}
               >
-                {value === ALL ? "Any location" : value}
+                {value === ALL ? "Any setting" : value}
               </button>
             ))}
           </div>
         )}
+        {places.map((place) => (
+          <button
+            key={place}
+            type="button"
+            className="jobs-board__toggle jobs-board__toggle--place jobs-board__toggle--on"
+            onClick={() => setPlaces((prev) => prev.filter((p) => p !== place))}
+            aria-label={`Remove location ${place}`}
+          >
+            {place} <span aria-hidden="true">×</span>
+          </button>
+        ))}
         {TOGGLE_KEYS.map((key) => (
           <button
             key={key}

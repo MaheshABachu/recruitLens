@@ -225,6 +225,18 @@
   --toggle-hue: var(--hue-violet);
 }
 
+.alerts-toggle--block {
+  --toggle-hue: var(--red);
+}
+
+/* "Covers Lockheed Martin, …" under the defense switch */
+.alerts-field__note {
+  margin: -2px 0 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .alerts-toggle--on,
 .alerts-toggle--on:hover {
   border-color: var(--toggle-hue);
@@ -270,6 +282,17 @@
   font-size: 13px;
   font-weight: 550;
   overflow-wrap: anywhere;
+}
+
+.alerts-chip--blocked {
+  background: color-mix(in srgb, var(--red) 12%, var(--surface));
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.alerts-chip--blocked .alerts-chip__remove {
+  color: inherit;
 }
 
 .alerts-chip__remove {
@@ -452,5 +475,17 @@
 
   .alerts-form__actions .landing-btn {
     width: 100%;
+  }
+}
+
+/* Five-way frequency picker: tighter segments, wraps on phones */
+.alerts-segments--frequency {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 480px) {
+  .alerts-segments--frequency {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

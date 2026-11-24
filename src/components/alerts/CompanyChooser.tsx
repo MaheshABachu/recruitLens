@@ -1,27 +1,45 @@
-import { useId, useMemo, useState } from "react";
-import { toAlertCompany, type AlertCompany, type CompanySuggestion } from "../../lib/alerts";
+import { useId, useMemo, useState, type ReactNode } from "react";
+import { toAlertCompany, type AlertCompany } from "../../lib/alerts";
 import { QuickPicks } from "./QuickPicks";
 
+export interface CompanyQuickPicks {
+  title: string;
+  items: { label: string; detail?: string }[];
+}
+
 interface CompanyChooserProps {
-  // Typeahead pool (the question bank's ~470 companies).
+  label: string;
+  hint: string;
+  // Typeahead pool (the question bank's ~470 companies, plus recommendations).
   names: string[];
-  // The user's pinned companies.
-  pins: string[];
-  // Companies hiring most for the picked kind + roles.
-  recommended: CompanySuggestion[];
   value: AlertCompany[];
   onChange: (companies: AlertCompany[]) => void;
-  anyFaang: boolean;
-  onAnyFaangChange: (on: boolean) => void;
+  // A switch above the chips (Any FAANG+ / Block defense tech).
+  toggle?: { label: string; on: boolean; onChange: (on: boolean) => void; className?: string; note?: ReactNode };
+  // One-tap rows under the field; picks already chosen are hidden.
+  quickPicks?: CompanyQuickPicks[];
+  // "blocked" styles the chips as exclusions.
+  tone?: "blocked";
+  placeholder?: string;
 }
 
 const MAX_COMPANIES = 50;
 const MAX_OPTIONS = 8;
 
-// Ideal companies for alerts. Any name can be added, not just the typeahead's:
-// postings are matched on companyKey(), so "Amazon" also catches
-// "Amazon Web Services (AWS)".
-export function CompanyChooser({ names, pins, recommended, value, onChange, anyFaang, onAnyFaangChange }: CompanyChooserProps) {
+// A company list for alerts (ideal companies, or blocked ones). Any name can be
+// added, not just the typeahead's: postings are matched on companyKey(), so
+// "Amazon" also catches "Amazon Web Services (AWS)".
+export function CompanyChooser({
+  label,
+  hint,
+  names,
+  value,
+  onChange,
+  toggle,
+  quickPicks = [],
+  tone,
+  placeholder = "Add a company…",
+}: CompanyChooserProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -36,7 +54,7 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
     const q = query.trim();
     if (!q) return [];
     const lower = q.toLowerCase();
-    const pool = [...new Set([...names, ...recommended.map((r) => r.displayName)])];
+    const pool = [...new Set(names)];
     const matches = pool
       .filter((n) => n.toLowerCase().includes(lower) && !chosenKeys.has(toAlertCompany(n).nameKey))
       .sort((a, b) => Number(!a.toLowerCase().startsWith(lower)) - Number(!b.toLowerCase().startsWith(lower)))
@@ -45,12 +63,20 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
     const typedKey = toAlertCompany(q).nameKey;
     const addTyped = typedKey !== "" && !chosenKeys.has(typedKey) && !pool.some((n) => n.toLowerCase() === lower);
     return addTyped ? [...matches, { name: q, typed: true }] : matches;
-  }, [names, recommended, query, chosenKeys]);
+  }, [names, query, chosenKeys]);
   const showList = open && options.length > 0;
 
-  const openPins = pins.filter((name) => !chosenKeys.has(toAlertCompany(name).nameKey));
-  const pinKeys = new Set(pins.map((name) => toAlertCompany(name).nameKey));
-  const openRecommended = recommended.filter((r) => !chosenKeys.has(r.nameKey) && !pinKeys.has(r.nameKey));
+  // Each row hides what's chosen and what an earlier row already offers.
+  const offered = new Set(chosenKeys);
+  const openPicks = quickPicks.map((section) => ({
+    title: section.title,
+    items: section.items.filter((item) => {
+      const key = toAlertCompany(item.label).nameKey;
+      if (offered.has(key)) return false;
+      offered.add(key);
+      return true;
+    }),
+  }));
 
   function add(name: string) {
     setQuery("");
@@ -63,23 +89,28 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
   return (
     <div className="alerts-field">
       <label className="alerts-field__label" htmlFor={inputId}>
-        Ideal companies <span className="alerts-field__optional">Optional</span>
+        {label} <span className="alerts-field__optional">Optional</span>
       </label>
-      <p className="alerts-field__hint">Every new posting at these companies, in any role.</p>
+      <p className="alerts-field__hint">{hint}</p>
 
-      <button
-        type="button"
-        className={`alerts-toggle alerts-toggle--faang${anyFaang ? " alerts-toggle--on" : ""}`}
-        aria-pressed={anyFaang}
-        onClick={() => onAnyFaangChange(!anyFaang)}
-      >
-        Any FAANG+ company
-      </button>
+      {toggle && (
+        <>
+          <button
+            type="button"
+            className={`alerts-toggle ${toggle.className ?? ""}${toggle.on ? " alerts-toggle--on" : ""}`}
+            aria-pressed={toggle.on}
+            onClick={() => toggle.onChange(!toggle.on)}
+          >
+            {toggle.label}
+          </button>
+          {toggle.note}
+        </>
+      )}
 
       {value.length > 0 && (
         <div className="alerts-chips alerts-chips--static">
           {value.map((c) => (
-            <span key={c.nameKey} className="alerts-chip">
+            <span key={c.nameKey} className={`alerts-chip${tone === "blocked" ? " alerts-chip--blocked" : ""}`}>
               {c.displayName}
               <button
                 type="button"
@@ -99,7 +130,7 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
           id={inputId}
           type="text"
           className="alerts-input"
-          placeholder={full ? `Up to ${MAX_COMPANIES} companies` : "Add a company…"}
+          placeholder={full ? `Up to ${MAX_COMPANIES} companies` : placeholder}
           disabled={full}
           value={query}
           autoComplete="off"
@@ -151,16 +182,10 @@ export function CompanyChooser({ names, pins, recommended, value, onChange, anyF
         )}
       </div>
 
-      {!full && (
-        <>
-          <QuickPicks title="Your pins" items={openPins.map((label) => ({ label }))} onPick={add} />
-          <QuickPicks
-            title="Hiring most for your picks"
-            items={openRecommended.map((r) => ({ label: r.displayName, detail: String(r.postings) }))}
-            onPick={add}
-          />
-        </>
-      )}
+      {!full &&
+        openPicks.map((section) => (
+          <QuickPicks key={section.title} title={section.title} items={section.items} onPick={add} />
+        ))}
     </div>
   );
 }

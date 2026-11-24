@@ -1,5 +1,6 @@
 import type { AlertPreferences } from "./alerts";
 import { escapeRegex, locationMatches } from "./alertLocations";
+import { isDefenseCompany } from "./defenseCompanies";
 import { companyKey } from "./faangCompanies";
 
 // Which postings a user's job alert sends, and in what order. Used by
@@ -8,7 +9,8 @@ import { companyKey } from "./faangCompanies";
 // Companies and locations decide what gets in; roles and keywords decide
 // what comes first:
 //   - Always required: the posting kind (jobs / internships) the user wants,
-//     and no known visa blocker when they need sponsorship.
+//     no known visa blocker when they need sponsorship, and a company that
+//     isn't blocked (their blocked list, or defense tech with that switch on).
 //   - Gets in: at one of their companies (or FAANG+ with that toggle on), OR
 //     in one of their locations, whatever the role.
 //   - Users with no companies, no FAANG+ toggle and no locations get every
@@ -33,6 +35,16 @@ export interface AlertProfile {
   preferences: AlertPreferences;
   // alert_companies.name_key values (companyKey of each chosen company).
   companyKeys: Set<string>;
+  // alert_excluded_companies.name_key values. A key also blocks longer names
+  // that start with it ("lockheed martin" blocks "Lockheed Martin Space").
+  excludedKeys: Set<string>;
+}
+
+export function isExcluded(excludedKeys: Set<string>, key: string): boolean {
+  if (!key) return false;
+  if (excludedKeys.has(key)) return true;
+  for (const k of excludedKeys) if (key.startsWith(`${k} `)) return true;
+  return false;
 }
 
 export interface AlertMatch {
@@ -57,8 +69,11 @@ export function matchPosting(profile: AlertProfile, posting: AlertPosting): Aler
 
   if (posting.kind === "jobs" ? !p.wantsJobs : !p.wantsInternships) return null;
   if (p.needsSponsorship && (posting.no_sponsorship || posting.requires_us_citizenship)) return null;
+  const key = companyKey(posting.company);
+  if (isExcluded(profile.excludedKeys, key)) return null;
+  if (p.excludeDefense && isDefenseCompany(posting.company)) return null;
 
-  const company = profile.companyKeys.has(companyKey(posting.company))
+  const company = profile.companyKeys.has(key)
     ? "listed"
     : p.anyFaang && posting.is_faang
       ? "faang"

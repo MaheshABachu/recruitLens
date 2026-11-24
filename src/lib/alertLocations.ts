@@ -125,8 +125,16 @@ export function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// The job boards' location filter runs this per posting, so compiled patterns are kept.
+const PHRASE_PATTERNS = new Map<string, RegExp>();
+
 function phraseMatches(location: string, phrase: string) {
-  return new RegExp(`(^|[^a-z0-9])${escapeRegex(phrase)}($|[^a-z0-9])`, "i").test(location);
+  let pattern = PHRASE_PATTERNS.get(phrase);
+  if (!pattern) {
+    pattern = new RegExp(`(^|[^a-z0-9])${escapeRegex(phrase)}($|[^a-z0-9])`, "i");
+    PHRASE_PATTERNS.set(phrase, pattern);
+  }
+  return pattern.test(location);
 }
 
 function placeMatches(location: string, place: AlertPlace) {

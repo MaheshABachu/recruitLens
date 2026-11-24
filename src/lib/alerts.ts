@@ -1,3 +1,4 @@
+import { FREQUENCY_STATUS, toAlertFrequency, type AlertFrequency } from "./alertFrequency";
 import { companyDisplayName, companyKey } from "./faangCompanies";
 import { supabase } from "./supabase";
 
@@ -9,7 +10,7 @@ import { supabase } from "./supabase";
 export const ALERT_CATEGORIES = ["Software", "AI/ML/Data", "Hardware", "Product", "Quant"] as const;
 export type AlertCategory = (typeof ALERT_CATEGORIES)[number];
 
-export type AlertFrequency = "instant" | "daily";
+export type { AlertFrequency } from "./alertFrequency";
 
 // Mirrors the migration's alert_preferences_list_sizes check.
 export const MAX_LIST_ITEMS = 20;
@@ -22,6 +23,8 @@ export interface AlertPreferences {
   locations: string[];
   needsSponsorship: boolean;
   anyFaang: boolean;
+  // Never email defense contractors / defense tech (src/lib/defenseCompanies.ts).
+  excludeDefense: boolean;
   emailEnabled: boolean;
   frequency: AlertFrequency;
 }
@@ -35,6 +38,8 @@ export interface AlertSettings {
   // null = the user has never saved preferences.
   preferences: AlertPreferences | null;
   companies: AlertCompany[];
+  // Blocked companies: never emailed, whatever else matches.
+  excluded: AlertCompany[];
 }
 
 export const DEFAULT_ALERT_PREFERENCES: AlertPreferences = {
@@ -45,8 +50,9 @@ export const DEFAULT_ALERT_PREFERENCES: AlertPreferences = {
   locations: [],
   needsSponsorship: false,
   anyFaang: false,
+  excludeDefense: false,
   emailEnabled: true,
-  frequency: "instant",
+  frequency: "30m",
 };
 
 // Mirrors the alert_preferences_complete check: email needs a kind and a role.
@@ -59,7 +65,7 @@ export function canEnableEmail(p: AlertPreferences): boolean {
 export function alertStatusLabel(p: AlertPreferences | null, hasAccess: boolean): string {
   if (!p || !p.emailEnabled) return "Off";
   if (!hasAccess) return "Paused — trial ended";
-  return p.frequency === "daily" ? "Daily" : "Instant";
+  return FREQUENCY_STATUS[p.frequency];
 }
 
 // Trim, drop empties and case-insensitive duplicates (first spelling wins), cap the length.
@@ -129,12 +135,13 @@ interface PreferencesRow {
   locations: string[];
   needs_sponsorship: boolean;
   any_faang: boolean;
+  exclude_defense: boolean;
   email_enabled: boolean;
-  frequency: AlertFrequency;
+  frequency: string;
 }
 
 const PREFERENCE_COLUMNS =
-  "wants_jobs, wants_internships, categories, title_keywords, locations, needs_sponsorship, any_faang, email_enabled, frequency";
+  "wants_jobs, wants_internships, categories, title_keywords, locations, needs_sponsorship, any_faang, exclude_defense, email_enabled, frequency";
 
 function fromRow(r: PreferencesRow): AlertPreferences {
   return {
@@ -145,8 +152,9 @@ function fromRow(r: PreferencesRow): AlertPreferences {
     locations: r.locations,
     needsSponsorship: r.needs_sponsorship,
     anyFaang: r.any_faang,
+    excludeDefense: r.exclude_defense,
     emailEnabled: r.email_enabled,
-    frequency: r.frequency,
+    frequency: toAlertFrequency(r.frequency),
   };
 }
 
@@ -171,6 +179,7 @@ function toRow(p: AlertPreferences): PreferencesRow & { timezone: string | null 
     locations: n.locations,
     needs_sponsorship: n.needsSponsorship,
     any_faang: n.anyFaang,
+    exclude_defense: n.excludeDefense,
     email_enabled: n.emailEnabled,
     frequency: n.frequency,
     timezone: browserTimeZone(),
@@ -179,26 +188,65 @@ function toRow(p: AlertPreferences): PreferencesRow & { timezone: string | null 
 
 // null = couldn't load (callers show an error, not empty defaults that a save would clobber).
 export async function getAlertSettings(): Promise<AlertSettings | null> {
-  const [prefs, companies] = await Promise.all([
+  const [prefs, companies, excluded] = await Promise.all([
     supabase.from("alert_preferences").select(PREFERENCE_COLUMNS).maybeSingle<PreferencesRow>(),
     supabase.from("alert_companies").select("name_key, display_name").order("created_at"),
+    supabase.from("alert_excluded_companies").select("name_key, display_name").order("created_at"),
   ]);
-  if (prefs.error || companies.error) {
-    console.error("Failed to load alert settings:", prefs.error ?? companies.error);
+  const error = prefs.error ?? companies.error ?? excluded.error;
+  if (error) {
+    console.error("Failed to load alert settings:", error);
     return null;
   }
+  const toCompany = (c: { name_key: string; display_name: string }) => ({ nameKey: c.name_key, displayName: c.display_name });
   return {
     preferences: prefs.data ? fromRow(prefs.data) : null,
-    companies: (companies.data ?? []).map((c) => ({ nameKey: c.name_key, displayName: c.display_name })),
+    companies: (companies.data ?? []).map(toCompany),
+    excluded: (excluded.data ?? []).map(toCompany),
   };
 }
 
-// Writes preferences, then brings alert_companies in line with `companies`
-// (deletes the removed keys, inserts the new ones). Returns an error message or null.
+// Brings one company table in line with `next` (deletes the removed keys,
+// inserts the new ones). Returns false on error.
+async function syncCompanies(
+  table: "alert_companies" | "alert_excluded_companies",
+  next: AlertCompany[],
+  previous: AlertCompany[],
+): Promise<boolean> {
+  const nextKeys = new Set(next.map((c) => c.nameKey));
+  const prevKeys = new Set(previous.map((c) => c.nameKey));
+  const removed = [...prevKeys].filter((k) => !nextKeys.has(k));
+  const added = next.filter((c) => !prevKeys.has(c.nameKey));
+
+  if (removed.length > 0) {
+    const { error } = await supabase.from(table).delete().in("name_key", removed);
+    if (error) {
+      console.error(`Failed to remove from ${table}:`, error);
+      return false;
+    }
+  }
+  if (added.length > 0) {
+    const { error } = await supabase
+      .from(table)
+      .upsert(
+        added.map((c) => ({ name_key: c.nameKey, display_name: c.displayName })),
+        { onConflict: "user_id,name_key", ignoreDuplicates: true },
+      );
+    if (error) {
+      console.error(`Failed to add to ${table}:`, error);
+      return false;
+    }
+  }
+  return true;
+}
+
+// Writes preferences, then the ideal and blocked company lists (the form keeps
+// a company in at most one; if it's ever in both, blocking wins at send time).
+// Returns an error message or null.
 export async function saveAlertSettings(
   preferences: AlertPreferences,
-  companies: AlertCompany[],
-  previousCompanies: AlertCompany[],
+  next: { companies: AlertCompany[]; excluded: AlertCompany[] },
+  previous: { companies: AlertCompany[]; excluded: AlertCompany[] },
 ): Promise<string | null> {
   // user_id is left out so the upsert's DO UPDATE never touches it (clients
   // have no update grant on it); its default fills it in on insert.
@@ -210,31 +258,10 @@ export async function saveAlertSettings(
     return "Couldn't save your alert settings. Try again.";
   }
 
-  const nextKeys = new Set(companies.map((c) => c.nameKey));
-  const prevKeys = new Set(previousCompanies.map((c) => c.nameKey));
-  const removed = [...prevKeys].filter((k) => !nextKeys.has(k));
-  const added = companies.filter((c) => !prevKeys.has(c.nameKey));
-
-  if (removed.length > 0) {
-    const { error } = await supabase.from("alert_companies").delete().in("name_key", removed);
-    if (error) {
-      console.error("Failed to remove alert companies:", error);
-      return "Saved your settings, but couldn't update your companies. Try again.";
-    }
-  }
-  if (added.length > 0) {
-    const { error } = await supabase
-      .from("alert_companies")
-      .upsert(
-        added.map((c) => ({ name_key: c.nameKey, display_name: c.displayName })),
-        { onConflict: "user_id,name_key", ignoreDuplicates: true },
-      );
-    if (error) {
-      console.error("Failed to add alert companies:", error);
-      return "Saved your settings, but couldn't update your companies. Try again.";
-    }
-  }
-  return null;
+  const ok =
+    (await syncCompanies("alert_companies", next.companies, previous.companies)) &&
+    (await syncCompanies("alert_excluded_companies", next.excluded, previous.excluded));
+  return ok ? null : "Saved your settings, but couldn't update your companies. Try again.";
 }
 
 // Intake prompt: true = already shown (finished or skipped), false = not yet,

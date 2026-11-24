@@ -546,6 +546,76 @@ button:disabled {
   min-width: 140px;
 }
 
+/* Location typeahead (LocationFilter.tsx) */
+.jobs-location {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.jobs-location__input {
+  width: 100%;
+  height: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.jobs-location__input::placeholder {
+  color: var(--text-dim);
+}
+
+.jobs-location__input:hover {
+  border-color: var(--border-strong);
+}
+
+.jobs-location__input--active {
+  border-color: var(--accent);
+}
+
+.jobs-location__list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: 300px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+.jobs-location__option {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.jobs-location__option--active {
+  background: var(--surface-2);
+}
+
+.jobs-location__count {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
 /* Toggle chips + work-model segmented control */
 .jobs-board__toggles {
   display: flex;
@@ -602,6 +672,10 @@ button:disabled {
 
 .jobs-board__toggle--faang {
   --toggle-hue: var(--hue-violet);
+}
+
+.jobs-board__toggle--place {
+  --toggle-hue: var(--accent);
 }
 
 .jobs-board__toggle--salary,
