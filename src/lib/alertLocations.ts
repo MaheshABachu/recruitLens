@@ -143,11 +143,38 @@ function placeMatches(location: string, place: AlertPlace) {
   );
 }
 
+// Spelling-insensitive key: "San Jose CA", "san jose, ca" and "San Jose, CA" agree.
+function placeKey(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+// key -> label for every suggestion, plus each city's state-name spelling
+// ("San Jose, California") and each state without its "(state)" tag ("Texas").
+const LABEL_BY_KEY = (() => {
+  const map = new Map<string, string>();
+  const add = (key: string, label: string) => {
+    if (key && !map.has(key)) map.set(key, label);
+  };
+  for (const label of LOCATION_SUGGESTIONS) add(placeKey(label), label);
+  for (const place of CITY_PLACES) for (const alias of place.aliases) add(placeKey(alias), place.label);
+  for (const state of STATE_PLACES) add(placeKey(state.label.replace(/\s*\(state\)$/, "")), state.label);
+  return map;
+})();
+
+// The suggestion label a typed or stored entry means ("San Jose CA" ->
+// "San Jose, CA"), or the entry itself, trimmed, when it isn't a known place.
+export function canonicalLocation(entry: string): string {
+  const trimmed = entry.trim().replace(/\s+/g, " ");
+  return LABEL_BY_KEY.get(placeKey(trimmed)) ?? trimmed;
+}
+
 // Does a posting's location satisfy one of the user's location entries?
-// Known labels use their aliases; free text matches as a whole word/phrase
-// ("CA" matches "San Jose, CA" but not "Chicago").
-export function locationMatches(postingLocation: string | null, entry: string): boolean {
+// Known labels use their aliases (spelling-insensitive, so an entry saved as
+// "San Jose CA" still counts as "San Jose, CA"); free text matches as a whole
+// word/phrase ("CA" matches "San Jose, CA" but not "Chicago").
+export function locationMatches(postingLocation: string | null, rawEntry: string): boolean {
   if (!postingLocation) return false;
+  const entry = canonicalLocation(rawEntry);
   const place = ALERT_PLACES.find((p) => p.label === entry);
   if (place) return placeMatches(postingLocation, place);
   const state = STATE_PLACES.find((s) => s.label === entry);

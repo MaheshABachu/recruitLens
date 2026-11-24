@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import { LOCATION_SUGGESTIONS, locationMatches } from "../../lib/alertLocations";
+import { LOCATION_SUGGESTIONS, canonicalLocation, locationMatches } from "../../lib/alertLocations";
 import type { JobPosting } from "../../types/jobPosting";
 
 interface LocationFilterProps {
@@ -27,15 +27,19 @@ export function LocationFilter({ postings, value, onChange }: LocationFilterProp
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const listId = useId();
-  const chosen = useMemo(() => new Set(value.map((v) => v.toLowerCase())), [value]);
+  const chosen = useMemo(() => new Set(value.map((v) => canonicalLocation(v).toLowerCase())), [value]);
 
   // Counts are computed for the handful of options on screen only.
   const options = useMemo(() => {
     if (!open) return [];
     const q = query.trim().toLowerCase();
+    // What the typed text resolves to, e.g. "san jose ca" -> "San Jose, CA".
+    const canonical = canonicalLocation(query);
     const pool = q
-      ? LOCATION_SUGGESTIONS.filter((s) => s.toLowerCase().includes(q)).sort(
-          (a, b) => Number(!a.toLowerCase().startsWith(q)) - Number(!b.toLowerCase().startsWith(q)),
+      ? LOCATION_SUGGESTIONS.filter((s) => s.toLowerCase().includes(q) || s === canonical).sort(
+          (a, b) =>
+            Number(b === canonical) - Number(a === canonical) ||
+            Number(!a.toLowerCase().startsWith(q)) - Number(!b.toLowerCase().startsWith(q)),
         )
       : POPULAR;
     const picked = pool
@@ -43,10 +47,9 @@ export function LocationFilter({ postings, value, onChange }: LocationFilterProp
       .slice(0, MAX_OPTIONS)
       .map((label) => ({ label, count: postings.filter((p) => locationMatches(p.location, label)).length, typed: false }))
       .filter((o) => o.count > 0);
-    const exact = LOCATION_SUGGESTIONS.some((s) => s.toLowerCase() === q);
-    if (q && !exact && !chosen.has(q)) {
-      const typed = query.trim();
-      picked.push({ label: typed, count: postings.filter((p) => locationMatches(p.location, typed)).length, typed: true });
+    const known = LOCATION_SUGGESTIONS.includes(canonical);
+    if (q && !known && !chosen.has(canonical.toLowerCase())) {
+      picked.push({ label: canonical, count: postings.filter((p) => locationMatches(p.location, canonical)).length, typed: true });
     }
     return picked;
   }, [open, query, chosen, postings]);
@@ -55,7 +58,7 @@ export function LocationFilter({ postings, value, onChange }: LocationFilterProp
   function add(label: string) {
     setQuery("");
     setActive(0);
-    const cleaned = label.trim().replace(/\s+/g, " ");
+    const cleaned = canonicalLocation(label);
     if (!cleaned || chosen.has(cleaned.toLowerCase())) return;
     onChange([...value, cleaned]);
   }

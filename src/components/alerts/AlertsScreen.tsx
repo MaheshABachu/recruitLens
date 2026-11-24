@@ -13,7 +13,7 @@ import {
   type CompanySuggestion,
 } from "../../lib/alerts";
 import { ALERT_FREQUENCIES, FREQUENCY_DETAIL, FREQUENCY_LABEL } from "../../lib/alertFrequency";
-import { LOCATION_SUGGESTIONS } from "../../lib/alertLocations";
+import { LOCATION_SUGGESTIONS, canonicalLocation } from "../../lib/alertLocations";
 import { DEFENSE_COMPANY_NAMES } from "../../lib/defenseCompanies";
 import { ThemeToggle } from "../layout/ThemeToggle";
 import { Logo } from "../shared/Logo";
@@ -270,6 +270,8 @@ export function AlertsScreen({ userId, userEmail, mode, onDone }: AlertsScreenPr
                 onChange={(locations) => update({ locations })}
                 suggestions={LOCATION_SUGGESTIONS}
                 quickPicks={{ title: "Popular", items: LOCATION_QUICK_PICKS }}
+                normalize={canonicalLocation}
+                splitOnComma={false}
               />
 
               <ChipInput

@@ -12,14 +12,31 @@ interface ChipInputProps {
   suggestions?: string[];
   // One-tap picks shown under the field.
   quickPicks?: { title: string; items: string[] };
+  // Maps typed text to its stored form (e.g. "San Jose CA" -> "San Jose, CA").
+  // Chips, suggestions and duplicates are compared in this form.
+  normalize?: (value: string) => string;
+  // Comma adds the chip (keywords). Off for values that contain commas (places).
+  splitOnComma?: boolean;
 }
 
 const MAX_OPTIONS = 8;
 
-// Free-text chips. Enter or comma adds, Backspace on an empty field removes the
-// last one. With suggestions, typing opens a list (arrow keys + Enter) that
+const collapseSpaces = (v: string) => v.trim().replace(/\s+/g, " ");
+
+// Free-text chips. Enter (or comma, with splitOnComma) adds, Backspace on an
+// empty field removes the last one. With suggestions, typing opens a list (arrow keys + Enter) that
 // ends with "Add “…”" for text that isn't one of them.
-export function ChipInput({ label, hint, placeholder, values, onChange, suggestions, quickPicks }: ChipInputProps) {
+export function ChipInput({
+  label,
+  hint,
+  placeholder,
+  values,
+  onChange,
+  suggestions,
+  quickPicks,
+  normalize = collapseSpaces,
+  splitOnComma = true,
+}: ChipInputProps) {
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -27,30 +44,39 @@ export function ChipInput({ label, hint, placeholder, values, onChange, suggesti
   const hintId = useId();
   const listId = useId();
   const full = values.length >= MAX_LIST_ITEMS;
-  const chosen = useMemo(() => new Set(values.map((v) => v.toLowerCase())), [values]);
+  const isChosen = useMemo(() => {
+    const keys = new Set(values.map((v) => normalize(v).toLowerCase()));
+    return (v: string) => keys.has(normalize(v).toLowerCase());
+  }, [values, normalize]);
 
   const options = useMemo(() => {
     const q = draft.trim().toLowerCase();
     if (!suggestions || !q) return [];
+    // What the typed text resolves to, e.g. "san jose ca" -> "San Jose, CA".
+    const canonical = normalize(draft);
+    const known = suggestions.includes(canonical);
     const matches = suggestions
-      .filter((s) => s.toLowerCase().includes(q) && !chosen.has(s.toLowerCase()))
-      .sort((a, b) => Number(!a.toLowerCase().startsWith(q)) - Number(!b.toLowerCase().startsWith(q)))
+      .filter((s) => (s.toLowerCase().includes(q) || s === canonical) && !isChosen(s))
+      .sort(
+        (a, b) =>
+          Number(b === canonical) - Number(a === canonical) ||
+          Number(!a.toLowerCase().startsWith(q)) - Number(!b.toLowerCase().startsWith(q)),
+      )
       .slice(0, MAX_OPTIONS)
       .map((value) => ({ value, typed: false }));
-    const exact = suggestions.some((s) => s.toLowerCase() === q);
-    return exact || chosen.has(q) ? matches : [...matches, { value: draft.trim(), typed: true }];
-  }, [draft, suggestions, chosen]);
+    return known || isChosen(canonical) ? matches : [...matches, { value: canonical, typed: true }];
+  }, [draft, suggestions, isChosen, normalize]);
   const showList = open && options.length > 0;
 
   function add(raw: string) {
     setDraft("");
     setActive(0);
-    const value = raw.replace(/,/g, "").trim().replace(/\s+/g, " ");
-    if (!value || full || chosen.has(value.toLowerCase())) return;
+    const value = normalize(splitOnComma ? raw.replace(/,/g, "") : raw);
+    if (!value || full || isChosen(value)) return;
     onChange([...values, value]);
   }
 
-  const openPicks = quickPicks ? quickPicks.items.filter((item) => !chosen.has(item.toLowerCase())) : [];
+  const openPicks = quickPicks ? quickPicks.items.filter((item) => !isChosen(item)) : [];
 
   return (
     <div className="alerts-field">
@@ -91,7 +117,7 @@ export function ChipInput({ label, hint, placeholder, values, onChange, suggesti
             aria-controls={suggestions ? listId : undefined}
             aria-activedescendant={showList ? `${listId}-${active}` : undefined}
             onChange={(e) => {
-              if (e.target.value.includes(",")) return add(e.target.value);
+              if (splitOnComma && e.target.value.includes(",")) return add(e.target.value);
               setDraft(e.target.value);
               setActive(0);
               setOpen(true);

@@ -1,4 +1,5 @@
 import { FREQUENCY_STATUS, toAlertFrequency, type AlertFrequency } from "./alertFrequency";
+import { canonicalLocation } from "./alertLocations";
 import { companyDisplayName, companyKey } from "./faangCompanies";
 import { supabase } from "./supabase";
 
@@ -149,7 +150,8 @@ function fromRow(r: PreferencesRow): AlertPreferences {
     wantsInternships: r.wants_internships,
     categories: r.categories as AlertCategory[],
     titleKeywords: r.title_keywords,
-    locations: r.locations,
+    // Older saves may hold "San Jose CA"; show them as their suggestion label.
+    locations: cleanChips(r.locations.map(canonicalLocation)),
     needsSponsorship: r.needs_sponsorship,
     anyFaang: r.any_faang,
     excludeDefense: r.exclude_defense,
@@ -164,7 +166,7 @@ export function normalizePreferences(p: AlertPreferences): AlertPreferences {
   return {
     ...p,
     titleKeywords: cleanChips(p.titleKeywords),
-    locations: cleanChips(p.locations),
+    locations: cleanChips(p.locations.map(canonicalLocation)),
     emailEnabled: p.emailEnabled && canEnableEmail(p),
   };
 }
