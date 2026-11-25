@@ -21,6 +21,8 @@ interface CompanyChooserProps {
   // "blocked" styles the chips as exclusions.
   tone?: "blocked";
   placeholder?: string;
+  // Shows the "Optional" tag next to the label (the alerts form's fields).
+  optional?: boolean;
 }
 
 const MAX_COMPANIES = 50;
@@ -39,6 +41,7 @@ export function CompanyChooser({
   quickPicks = [],
   tone,
   placeholder = "Add a company…",
+  optional = true,
 }: CompanyChooserProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -89,7 +92,7 @@ export function CompanyChooser({
   return (
     <div className="alerts-field">
       <label className="alerts-field__label" htmlFor={inputId}>
-        {label} <span className="alerts-field__optional">Optional</span>
+        {label} {optional && <span className="alerts-field__optional">Optional</span>}
       </label>
       <p className="alerts-field__hint">{hint}</p>
 

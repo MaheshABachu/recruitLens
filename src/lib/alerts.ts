@@ -242,6 +242,29 @@ async function syncCompanies(
   return true;
 }
 
+// Blocked companies + the "Block defense tech" switch, for the job boards'
+// "Hide blocked companies" filter. null = couldn't load.
+export async function getBlockedCompanies(): Promise<{ excluded: AlertCompany[]; excludeDefense: boolean } | null> {
+  const [excluded, prefs] = await Promise.all([
+    supabase.from("alert_excluded_companies").select("name_key, display_name").order("created_at"),
+    supabase.from("alert_preferences").select("exclude_defense").maybeSingle<{ exclude_defense: boolean }>(),
+  ]);
+  const error = excluded.error ?? prefs.error;
+  if (error) {
+    console.error("Failed to load blocked companies:", error);
+    return null;
+  }
+  return {
+    excluded: (excluded.data ?? []).map((c) => ({ nameKey: c.name_key, displayName: c.display_name })),
+    excludeDefense: prefs.data?.exclude_defense ?? false,
+  };
+}
+
+// Saves just the blocked list (the job boards edit it in place). Returns false on error.
+export function saveBlockedCompanies(next: AlertCompany[], previous: AlertCompany[]): Promise<boolean> {
+  return syncCompanies("alert_excluded_companies", next, previous);
+}
+
 // Writes preferences, then the ideal and blocked company lists (the form keeps
 // a company in at most one; if it's ever in both, blocking wins at send time).
 // Returns an error message or null.

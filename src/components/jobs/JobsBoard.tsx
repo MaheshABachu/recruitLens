@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useJobPostings } from "../../hooks/useJobPostings";
 import { useLcCompanies } from "../../hooks/useLcCompanies";
 import { useCompanyStats } from "../../hooks/useCompanyStats";
+import { useAuth } from "../../hooks/useAuth";
+import { useBlockedCompanies } from "../../hooks/useBlockedCompanies";
+import { isExcluded } from "../../lib/alertMatching";
+import { isDefenseCompany } from "../../lib/defenseCompanies";
+import { companyKey } from "../../lib/faangCompanies";
+import { CompanyChooser } from "../alerts/CompanyChooser";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { JobRow, daysSince } from "./JobRow";
 import { LocationFilter, postingInPlaces } from "./LocationFilter";
 import type { JobPosting } from "../../types/jobPosting";
 import type { PostingKind } from "../../lib/jobPostings";
+import "../../styles/alerts.css";
 
 type SortBy = "date" | "company";
 
@@ -58,6 +65,8 @@ interface JobsBoardProps {
 export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
   const { postings, loading } = useJobPostings(kind);
   const { companies: bankCompanies } = useLcCompanies();
+  const { session } = useAuth();
+  const blocked = useBlockedCompanies(session?.user.id ?? null);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(ALL);
@@ -67,6 +76,9 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
   const [toggles, setToggles] = useState<Set<ToggleKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
+  // On by default: the same blocked list (and defense switch) as job alerts.
+  const [hideBlocked, setHideBlocked] = useState(true);
+  const [blockPanelOpen, setBlockPanelOpen] = useState(false);
 
   const categories = useMemo(
     () => [...new Set(postings.map((p) => p.category).filter((c): c is string => !!c))].sort(),
@@ -84,32 +96,57 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
     return { total: postings.length, newThisWeek, companies: new Set(postings.map((p) => p.company)).size };
   }, [postings]);
 
+  const postingCompanies = useMemo(() => [...new Set(postings.map((p) => p.company))].sort(), [postings]);
+
+  // Same rule as the alert emails (alertMatching.ts): a blocked key also
+  // blocks longer names that start with it.
+  const blockedKeys = useMemo(() => new Set(blocked.excluded.map((c) => c.nameKey)), [blocked.excluded]);
+  const isBlocked = useMemo(() => {
+    if (blockedKeys.size === 0 && !blocked.excludeDefense) return () => false;
+    const cache = new Map<string, boolean>();
+    return (company: string) => {
+      let hit = cache.get(company);
+      if (hit === undefined) {
+        hit = isExcluded(blockedKeys, companyKey(company)) || (blocked.excludeDefense && isDefenseCompany(company));
+        cache.set(company, hit);
+      }
+      return hit;
+    };
+  }, [blockedKeys, blocked.excludeDefense]);
+
   // Job lists spell company names their own way; match the question bank
   // case-insensitively and keep its canonical spelling for the Prep link.
   const bankByLower = useMemo(() => new Map(bankCompanies.map((name) => [name.toLowerCase(), name])), [bankCompanies]);
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = postings.filter((p) => {
+    let hiddenBlocked = 0;
+    const kept = postings.filter((p) => {
       if (category !== ALL && p.category !== category) return false;
       if (source !== ALL && !p.sources.includes(source)) return false;
       if (workModel !== ALL && p.workModel !== workModel) return false;
       if (!postingInPlaces(p, places)) return false;
       for (const key of toggles) if (!TOGGLES[key].test(p)) return false;
       if (q && !p.company.toLowerCase().includes(q) && !p.title.toLowerCase().includes(q)) return false;
+      if (hideBlocked && isBlocked(p.company)) {
+        hiddenBlocked += 1;
+        return false;
+      }
       return true;
     });
-    return filtered.sort((a, b) =>
+    kept.sort((a, b) =>
       sortBy === "date"
         ? (b.datePosted ?? "").localeCompare(a.datePosted ?? "")
         : a.company.localeCompare(b.company),
     );
-  }, [postings, search, category, source, workModel, places, toggles, sortBy]);
+    return { rows: kept, hiddenBlocked };
+  }, [postings, search, category, source, workModel, places, toggles, sortBy, hideBlocked, isBlocked]);
+  const { rows, hiddenBlocked } = filtered;
 
   // Filters changed the result set out from under the current page — start over.
   useEffect(() => {
     setVisibleCount(PAGE_STEP);
-  }, [search, category, source, workModel, places, toggles, sortBy]);
+  }, [search, category, source, workModel, places, toggles, sortBy, hideBlocked, blocked.excluded]);
 
   const visibleRows = rows.slice(0, visibleCount);
 
@@ -303,6 +340,20 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
             {TOGGLES[key].label}
           </button>
         ))}
+        <label className={`jobs-board__hide-blocked${hideBlocked ? " jobs-board__hide-blocked--on" : ""}`}>
+          <input type="checkbox" checked={hideBlocked} onChange={(e) => setHideBlocked(e.target.checked)} />
+          Hide blocked companies
+          {blocked.excluded.length > 0 && <span className="jobs-board__hide-blocked-count">{blocked.excluded.length}</span>}
+        </label>
+        <button
+          type="button"
+          className={`jobs-board__block-btn${blockPanelOpen ? " jobs-board__block-btn--open" : ""}`}
+          aria-expanded={blockPanelOpen}
+          aria-controls="jobs-block-panel"
+          onClick={() => setBlockPanelOpen((open) => !open)}
+        >
+          {blockPanelOpen ? "Done blocking" : "+ Block a company"}
+        </button>
         {hasFilters && (
           <button type="button" className="jobs-board__clear" onClick={clearFilters}>
             Clear filters
@@ -310,9 +361,30 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
         )}
       </div>
 
+      {/* Inline, not a popover: the toggle row scrolls sideways on phones and would clip it. */}
+      {blockPanelOpen && (
+        <div className="jobs-board__block-panel" id="jobs-block-panel">
+          <CompanyChooser
+            label="Blocked companies"
+            hint="Hidden here when “Hide blocked companies” is on, and never sent in your job alerts. Saved as you go."
+            placeholder="Type a company to block…"
+            tone="blocked"
+            optional={false}
+            names={postingCompanies}
+            value={blocked.excluded}
+            onChange={(next) => void blocked.update(next)}
+          />
+          {blocked.excludeDefense && (
+            <p className="alerts-field__note">Defense tech is blocked too (switch it off in Account → Job alerts).</p>
+          )}
+          {blocked.error && <p className="jobs-board__block-error" role="alert">{blocked.error}</p>}
+        </div>
+      )}
+
       {!loading && (
         <span className="jobs-board__count">
           {rows.length.toLocaleString()} of {postings.length.toLocaleString()} postings
+          {hiddenBlocked > 0 && ` · ${hiddenBlocked.toLocaleString()} from blocked companies hidden`}
         </span>
       )}
 
