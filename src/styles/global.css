@@ -690,12 +690,13 @@ button:disabled {
   color: var(--toggle-hue);
 }
 
-/* "Hide blocked companies" checkbox + the block button next to it. */
-.jobs-board__hide-blocked {
+/* "Hide blocked companies": checkbox toggles the filter, label opens the list. */
+.jobs-hide-blocked {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px 4px 9px;
+  padding: 0 4px 0 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -703,10 +704,15 @@ button:disabled {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
 }
 
-.jobs-board__hide-blocked input {
+.jobs-hide-blocked--on {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.jobs-hide-blocked__check,
+.jobs-hide-blocked__item input {
   width: 14px;
   height: 14px;
   margin: 0;
@@ -714,12 +720,20 @@ button:disabled {
   cursor: pointer;
 }
 
-.jobs-board__hide-blocked--on {
-  border-color: var(--border-strong);
+.jobs-hide-blocked__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 0;
+  color: inherit;
+  font: inherit;
+}
+
+.jobs-hide-blocked__label:hover {
   color: var(--text);
 }
 
-.jobs-board__hide-blocked-count {
+.jobs-hide-blocked__count {
   min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
@@ -728,6 +742,71 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: 11px;
   text-align: center;
+}
+
+.jobs-hide-blocked__caret {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.jobs-hide-blocked__menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+  white-space: normal;
+}
+
+.jobs-hide-blocked__heading,
+.jobs-hide-blocked__empty,
+.jobs-hide-blocked__note {
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.jobs-hide-blocked__empty {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.jobs-hide-blocked__list {
+  max-height: 280px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.jobs-hide-blocked__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.jobs-hide-blocked__item:hover {
+  background: var(--surface-2);
+}
+
+.jobs-hide-blocked__note {
+  border-top: 1px solid var(--border);
+  font-weight: 500;
 }
 
 /* Toggle chips and the blocked-companies group share a line when there's room. */

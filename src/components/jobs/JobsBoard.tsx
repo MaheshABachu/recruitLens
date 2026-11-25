@@ -8,6 +8,7 @@ import { isExcluded } from "../../lib/alertMatching";
 import { isDefenseCompany } from "../../lib/defenseCompanies";
 import { companyKey } from "../../lib/faangCompanies";
 import { BlockCompanyInput } from "./BlockCompanyInput";
+import { HideBlockedToggle } from "./HideBlockedToggle";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { JobRow, daysSince } from "./JobRow";
 import { LocationFilter, postingInPlaces } from "./LocationFilter";
@@ -346,14 +347,13 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
 
         {/* Outside the toggle row, which scrolls sideways on phones and would clip the dropdown. */}
         <div className="jobs-board__blocked">
-          <label
-            className={`jobs-board__hide-blocked${hideBlocked ? " jobs-board__hide-blocked--on" : ""}`}
-            title={blocked.excludeDefense ? "Also hides defense tech (set in Account → Job alerts)" : undefined}
-          >
-            <input type="checkbox" checked={hideBlocked} onChange={(e) => setHideBlocked(e.target.checked)} />
-            Hide blocked companies
-            {blocked.excluded.length > 0 && <span className="jobs-board__hide-blocked-count">{blocked.excluded.length}</span>}
-          </label>
+          <HideBlockedToggle
+            hide={hideBlocked}
+            onHideChange={setHideBlocked}
+            blocked={blocked.excluded}
+            onBlockedChange={(next) => void blocked.update(next)}
+            excludeDefense={blocked.excludeDefense}
+          />
           <BlockCompanyInput postings={postings} value={blocked.excluded} onChange={(next) => void blocked.update(next)} />
           {blocked.error && <span className="jobs-board__block-error" role="alert">{blocked.error}</span>}
         </div>
