@@ -730,36 +730,36 @@ button:disabled {
   text-align: center;
 }
 
-.jobs-board__block-btn {
-  padding: 5px 12px;
-  border: 1px dashed var(--border-strong);
-  border-radius: 999px;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: background 0.12s ease;
-}
-
-.jobs-board__block-btn:hover,
-.jobs-board__block-btn--open {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.jobs-board__block-btn--open {
-  border-style: solid;
-}
-
-.jobs-board__block-panel {
+/* Toggle chips and the blocked-companies group share a line when there's room. */
+.jobs-board__toggle-bar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  max-width: 560px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+}
+
+.jobs-board__blocked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jobs-block {
+  flex: 0 0 auto;
+  width: 170px;
+  min-width: 0;
+}
+
+.jobs-block .jobs-location__input {
+  padding: 5px 8px;
+  border-radius: 999px;
+}
+
+.jobs-block__heading {
+  padding: 4px 10px 2px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .jobs-board__block-error {
@@ -1054,6 +1054,11 @@ a.jobs-board__company:hover {
 
   .jobs-board__toggles > * {
     flex-shrink: 0;
+  }
+
+  .jobs-board__toggle-bar > .jobs-board__toggles {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .jobs-board__section-title {

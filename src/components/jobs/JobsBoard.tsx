@@ -7,13 +7,12 @@ import { useBlockedCompanies } from "../../hooks/useBlockedCompanies";
 import { isExcluded } from "../../lib/alertMatching";
 import { isDefenseCompany } from "../../lib/defenseCompanies";
 import { companyKey } from "../../lib/faangCompanies";
-import { CompanyChooser } from "../alerts/CompanyChooser";
+import { BlockCompanyInput } from "./BlockCompanyInput";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { JobRow, daysSince } from "./JobRow";
 import { LocationFilter, postingInPlaces } from "./LocationFilter";
 import type { JobPosting } from "../../types/jobPosting";
 import type { PostingKind } from "../../lib/jobPostings";
-import "../../styles/alerts.css";
 
 type SortBy = "date" | "company";
 
@@ -78,7 +77,6 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
   // On by default: the same blocked list (and defense switch) as job alerts.
   const [hideBlocked, setHideBlocked] = useState(true);
-  const [blockPanelOpen, setBlockPanelOpen] = useState(false);
 
   const categories = useMemo(
     () => [...new Set(postings.map((p) => p.category).filter((c): c is string => !!c))].sort(),
@@ -95,8 +93,6 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
     for (const p of postings) if (TOGGLES.newThisWeek.test(p)) newThisWeek += 1;
     return { total: postings.length, newThisWeek, companies: new Set(postings.map((p) => p.company)).size };
   }, [postings]);
-
-  const postingCompanies = useMemo(() => [...new Set(postings.map((p) => p.company))].sort(), [postings]);
 
   // Same rule as the alert emails (alertMatching.ts): a blocked key also
   // blocks longer names that start with it.
@@ -302,84 +298,66 @@ export function JobsBoard({ kind, title, onPrepCompany }: JobsBoardProps) {
         </select>
       </div>
 
-      <div className="jobs-board__toggles" data-tour="job-toggles">
-        {workModels.length > 0 && (
-          <div className="jobs-board__segmented" role="group" aria-label="Work model">
-            {[ALL, ...workModels].map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`jobs-board__segment ${workModel === value ? "jobs-board__segment--active" : ""}`}
-                aria-pressed={workModel === value}
-                onClick={() => setWorkModel(value)}
-              >
-                {value === ALL ? "Any setting" : value}
-              </button>
-            ))}
-          </div>
-        )}
-        {places.map((place) => (
-          <button
-            key={place}
-            type="button"
-            className="jobs-board__toggle jobs-board__toggle--place jobs-board__toggle--on"
-            onClick={() => setPlaces((prev) => prev.filter((p) => p !== place))}
-            aria-label={`Remove location ${place}`}
-          >
-            {place} <span aria-hidden="true">×</span>
-          </button>
-        ))}
-        {TOGGLE_KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={`jobs-board__toggle jobs-board__toggle--${key} ${toggles.has(key) ? "jobs-board__toggle--on" : ""}`}
-            aria-pressed={toggles.has(key)}
-            onClick={() => toggle(key)}
-          >
-            {TOGGLES[key].label}
-          </button>
-        ))}
-        <label className={`jobs-board__hide-blocked${hideBlocked ? " jobs-board__hide-blocked--on" : ""}`}>
-          <input type="checkbox" checked={hideBlocked} onChange={(e) => setHideBlocked(e.target.checked)} />
-          Hide blocked companies
-          {blocked.excluded.length > 0 && <span className="jobs-board__hide-blocked-count">{blocked.excluded.length}</span>}
-        </label>
-        <button
-          type="button"
-          className={`jobs-board__block-btn${blockPanelOpen ? " jobs-board__block-btn--open" : ""}`}
-          aria-expanded={blockPanelOpen}
-          aria-controls="jobs-block-panel"
-          onClick={() => setBlockPanelOpen((open) => !open)}
-        >
-          {blockPanelOpen ? "Done blocking" : "+ Block a company"}
-        </button>
-        {hasFilters && (
-          <button type="button" className="jobs-board__clear" onClick={clearFilters}>
-            Clear filters
-          </button>
-        )}
-      </div>
-
-      {/* Inline, not a popover: the toggle row scrolls sideways on phones and would clip it. */}
-      {blockPanelOpen && (
-        <div className="jobs-board__block-panel" id="jobs-block-panel">
-          <CompanyChooser
-            label="Blocked companies"
-            hint="Hidden here when “Hide blocked companies” is on, and never sent in your job alerts. Saved as you go."
-            placeholder="Type a company to block…"
-            tone="blocked"
-            optional={false}
-            names={postingCompanies}
-            value={blocked.excluded}
-            onChange={(next) => void blocked.update(next)}
-          />
-          {blocked.excludeDefense && (
-            <p className="alerts-field__note">Defense tech is blocked too (switch it off in Account → Job alerts).</p>
+      <div className="jobs-board__toggle-bar">
+        <div className="jobs-board__toggles" data-tour="job-toggles">
+          {workModels.length > 0 && (
+            <div className="jobs-board__segmented" role="group" aria-label="Work model">
+              {[ALL, ...workModels].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`jobs-board__segment ${workModel === value ? "jobs-board__segment--active" : ""}`}
+                  aria-pressed={workModel === value}
+                  onClick={() => setWorkModel(value)}
+                >
+                  {value === ALL ? "Any setting" : value}
+                </button>
+              ))}
+            </div>
           )}
-          {blocked.error && <p className="jobs-board__block-error" role="alert">{blocked.error}</p>}
+          {places.map((place) => (
+            <button
+              key={place}
+              type="button"
+              className="jobs-board__toggle jobs-board__toggle--place jobs-board__toggle--on"
+              onClick={() => setPlaces((prev) => prev.filter((p) => p !== place))}
+              aria-label={`Remove location ${place}`}
+            >
+              {place} <span aria-hidden="true">×</span>
+            </button>
+          ))}
+          {TOGGLE_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`jobs-board__toggle jobs-board__toggle--${key} ${toggles.has(key) ? "jobs-board__toggle--on" : ""}`}
+              aria-pressed={toggles.has(key)}
+              onClick={() => toggle(key)}
+            >
+              {TOGGLES[key].label}
+            </button>
+          ))}
+          {hasFilters && (
+            <button type="button" className="jobs-board__clear" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Outside the toggle row, which scrolls sideways on phones and would clip the dropdown. */}
+        <div className="jobs-board__blocked">
+          <label
+            className={`jobs-board__hide-blocked${hideBlocked ? " jobs-board__hide-blocked--on" : ""}`}
+            title={blocked.excludeDefense ? "Also hides defense tech (set in Account → Job alerts)" : undefined}
+          >
+            <input type="checkbox" checked={hideBlocked} onChange={(e) => setHideBlocked(e.target.checked)} />
+            Hide blocked companies
+            {blocked.excluded.length > 0 && <span className="jobs-board__hide-blocked-count">{blocked.excluded.length}</span>}
+          </label>
+          <BlockCompanyInput postings={postings} value={blocked.excluded} onChange={(next) => void blocked.update(next)} />
+          {blocked.error && <span className="jobs-board__block-error" role="alert">{blocked.error}</span>}
+        </div>
+      </div>
 
       {!loading && (
         <span className="jobs-board__count">
